@@ -22,7 +22,8 @@ import {
   Zap,
   BarChart3,
 } from "lucide-react";
-import { DASHBOARD_META, CENTER_STATS } from "../constants";
+import { useDashboard } from "../DashboardContext";
+import AnimatedNumber from "./AnimatedNumber";
 
 const IconMap = { Leaf, Sun, BatteryCharging, Coins, Zap, BarChart3 };
 
@@ -242,6 +243,7 @@ const SmartEnergyReactor = () => {
 };
 
 const EnergyLinkLines = () => {
+  const { centerStats } = useDashboard();
   const [view, setView] = React.useState({
     w: window.innerWidth,
     h: window.innerHeight,
@@ -269,7 +271,7 @@ const EnergyLinkLines = () => {
           <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
         </linearGradient>
       </defs>
-      {CENTER_STATS.map((stat, i) => (
+      {centerStats.map((stat, i) => (
         <g key={i}>
           <path
             d={`M ${view.w / 2} ${view.h / 2} Q ${view.w / 2} ${
@@ -301,11 +303,39 @@ const EnergyLinkLines = () => {
 };
 
 const CenterVisual: React.FC = () => {
+  const { dashboardMeta, centerStats } = useDashboard();
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [frameLoop, setFrameLoop] = React.useState<"always" | "demand">("demand");
+
+  React.useEffect(() => {
+    // 策略：
+    // 1. 初始 frameloop="demand"，Canvas 会初始化并渲染第一帧，然后暂停。
+    //    这把 WebGL 初始化的开销放在了页面加载初期，避免了后续突然挂载造成的卡顿。
+    // 2. 等待 CSS 入场动画（约 1s）完全结束。
+    // 3. 切换为 "always" 开启渲染循环，并淡入显示。
+    const timer = setTimeout(() => {
+      setFrameLoop("always");
+      setIsVisible(true);
+    }, 1500); 
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="w-full h-full relative overflow-hidden flex items-center justify-center [perspective:2000px]">
       {/* 3D 核心层 */}
-      <div className="absolute inset-0 z-0">
-        <Canvas shadowMap>
+      <div className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <Canvas
+          shadows
+          frameloop={frameLoop}
+          dpr={[1, 1.5]} // 降低最大 DPR，优化高分屏性能
+          gl={{ 
+            antialias: true, 
+            alpha: true, 
+            powerPreference: "high-performance",
+            stencil: false,
+            depth: true
+          }}
+        >
           <PerspectiveCamera
             makeDefault
             position={[0, 5, 12]}
@@ -366,10 +396,10 @@ const CenterVisual: React.FC = () => {
           {/* 核心数值 */}
           <div className="flex items-baseline space-x-2">
             <span className="text-4xl font-cyber font-black value-highlight leading-none drop-shadow-[0_0_10px_rgba(0,242,255,0.8)]">
-              {DASHBOARD_META.mainValue}
+              <AnimatedNumber value={dashboardMeta.mainValue} />
             </span>
             <span className="text-cyan-400 font-tech text-sm font-bold">
-              {DASHBOARD_META.mainUnit}
+              {dashboardMeta.mainUnit}
             </span>
           </div>
 
@@ -380,7 +410,7 @@ const CenterVisual: React.FC = () => {
         </div>
 
         {/* 环绕卡片 - 采用更加立体的分布 */}
-        {CENTER_STATS.map((stat, i) => {
+        {centerStats.map((stat, i) => {
           const Icon = IconMap[stat.iconName];
           const isLeft = stat.pos.includes("left");
           const rotation = isLeft ? "rotateY(15deg)" : "rotateY(-15deg)";
@@ -420,7 +450,7 @@ const CenterVisual: React.FC = () => {
                   </div>
                   <div className="flex items-baseline justify-between relative z-10">
                     <span className="text-cyan-300 font-tech font-bold text-xl drop-shadow-[0_0_10px_rgba(0,242,255,0.5)]">
-                      {stat.value.split(" ")[0]}
+                      <AnimatedNumber value={stat.value.split(" ")[0]} />
                     </span>
                     <span className="text-[10px] text-slate-300 font-bold ml-2 uppercase">
                       {stat.value.split(" ")[1] || ""}

@@ -10,13 +10,12 @@ import {
   Legend,
 } from "recharts";
 import ChartWidget from "./ChartWidget";
-import {
-  MONTHLY_CARBON_TREND,
-  COLORS,
-  RENEWABLE_SUBSTITUTION_DATA,
-} from "../constants";
+import { COLORS } from "../constants";
+import { useDashboard } from "../DashboardContext";
+import AnimatedNumber from "./AnimatedNumber";
 
 const BottomRow: React.FC = () => {
+  const { monthlyCarbonTrend, renewableSubstitutionData, bottomStats } = useDashboard();
   return (
     <div className="flex h-full space-x-8">
       {/* 月度碳中和足迹 */}
@@ -29,7 +28,7 @@ const BottomRow: React.FC = () => {
           <div className="h-full w-full py-4 pr-4">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={MONTHLY_CARBON_TREND}
+                data={monthlyCarbonTrend}
                 margin={{ top: 10, right: 10, left: -10, bottom: 5 }}
               >
                 <defs>
@@ -110,7 +109,7 @@ const BottomRow: React.FC = () => {
                 </span>
                 <div className="flex items-baseline space-x-2">
                   <span className="text-3xl font-tech font-bold text-emerald-400">
-                    32.8%
+                    <AnimatedNumber value={bottomStats.renewableRate} />%
                   </span>
                   <span className="text-[10px] text-emerald-400/60 font-black">
                     ↑ 4.2%
@@ -123,7 +122,7 @@ const BottomRow: React.FC = () => {
                     清洁能源出力
                   </span>
                   <span className="text-sm font-tech font-bold text-cyan-400">
-                    185.2 kW
+                    <AnimatedNumber value={bottomStats.cleanEnergyOutput} /> kW
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
@@ -131,7 +130,7 @@ const BottomRow: React.FC = () => {
                     外部市电拉口
                   </span>
                   <span className="text-sm font-tech font-bold text-blue-400">
-                    412.5 kW
+                    <AnimatedNumber value={bottomStats.gridPower} /> kW
                   </span>
                 </div>
               </div>
@@ -140,7 +139,7 @@ const BottomRow: React.FC = () => {
             <div className="flex-1 min-h-0 px-2">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
-                  data={RENEWABLE_SUBSTITUTION_DATA}
+                  data={renewableSubstitutionData}
                   margin={{ top: 5, right: 5, left: -15, bottom: 0 }}
                   stackOffset="expand"
                 >

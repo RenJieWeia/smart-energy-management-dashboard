@@ -1,12 +1,13 @@
 import React from "react";
 import { ShieldCheck, Database, BellDot, Cpu, Network } from "lucide-react";
-import { DASHBOARD_META } from "../constants";
+import { useDashboard } from "../DashboardContext";
 
 interface HeaderProps {
   currentTime: Date;
 }
 
 const Header: React.FC<HeaderProps> = ({ currentTime }) => {
+  const { dashboardMeta } = useDashboard();
   const formatDate = (date: Date) => {
     const y = date.getFullYear();
     const m = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -49,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ currentTime }) => {
       <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[900px] h-full pointer-events-none">
         <div className="cyber-header-shape h-full flex flex-col items-center justify-center relative overflow-hidden">
           <h1 className="text-4xl font-cyber tracking-[0.25em] text-white font-black italic drop-shadow-[0_0_20px_rgba(0,242,255,0.8)]">
-            {DASHBOARD_META.title}
+            {dashboardMeta.title}
           </h1>
           <div className="flex items-center space-x-3 mt-1">
             <span className="w-10 h-[1px] bg-cyan-500/50"></span>

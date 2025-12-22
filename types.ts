@@ -40,3 +40,9 @@ export interface PeakValleyData {
   value: number;
   color: string;
 }
+
+export interface KPIData {
+  subject: string;
+  A: number;
+  fullMark: number;
+}

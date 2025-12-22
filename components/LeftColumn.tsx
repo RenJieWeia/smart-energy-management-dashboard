@@ -13,14 +13,14 @@ import {
   Pie,
 } from "recharts";
 import ChartWidget from "./ChartWidget";
-import {
-  TODAY_ENERGY_TREND,
-  ENERGY_RANKING,
-  COLORS,
-  PEAK_VALLEY_DISTRIBUTION,
-} from "../constants";
+import { COLORS } from "../constants";
+import { useDashboard } from "../DashboardContext";
+import AnimatedNumber from "./AnimatedNumber";
 
 const LeftColumn: React.FC = () => {
+  const { todayEnergyTrend, energyRanking, peakValleyDistribution } =
+    useDashboard();
+
   return (
     <div className="h-full flex flex-col space-y-6">
       {/* 实时负荷预测对比 - 去除 AI 元素 */}
@@ -28,7 +28,7 @@ const LeftColumn: React.FC = () => {
         <div className="h-full w-full py-4 pr-4 relative">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={TODAY_ENERGY_TREND}
+              data={todayEnergyTrend}
               margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
             >
               <defs>
@@ -110,7 +110,7 @@ const LeftColumn: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={PEAK_VALLEY_DISTRIBUTION}
+                  data={peakValleyDistribution}
                   cx="50%"
                   cy="50%"
                   innerRadius={35}
@@ -119,7 +119,7 @@ const LeftColumn: React.FC = () => {
                   dataKey="value"
                   nameKey="name"
                 >
-                  {PEAK_VALLEY_DISTRIBUTION.map((entry, index) => (
+                  {peakValleyDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -132,13 +132,16 @@ const LeftColumn: React.FC = () => {
                     color: "#fff",
                   }}
                   itemStyle={{ color: "#fff" }}
-                  formatter={(value: number, name: string) => [`${value}%`, name]}
+                  formatter={(value: number, name: string) => [
+                    `${value}%`,
+                    name,
+                  ]}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="w-1/2 space-y-3">
-            {PEAK_VALLEY_DISTRIBUTION.map((item, idx) => (
+            {peakValleyDistribution.map((item, idx) => (
               <div key={idx} className="flex flex-col">
                 <div className="flex justify-between items-center text-[12px] mb-1.5">
                   <div className="flex items-center space-x-2">
@@ -149,7 +152,7 @@ const LeftColumn: React.FC = () => {
                     <span className="text-white font-black">{item.name}</span>
                   </div>
                   <span className="text-cyan-400 font-tech font-bold">
-                    {item.value}%
+                    <AnimatedNumber value={item.value} />%
                   </span>
                 </div>
                 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
@@ -171,7 +174,7 @@ const LeftColumn: React.FC = () => {
       {/* 分区负荷排行 */}
       <ChartWidget title="高能耗区域排行" className="flex-[1.8]">
         <div className="flex flex-col space-y-6 mt-4">
-          {ENERGY_RANKING.map((item, idx) => (
+          {energyRanking.map((item, idx) => (
             <div key={idx} className="relative group">
               <div className="flex justify-between items-end mb-2.5">
                 <div className="flex items-center space-x-3">
@@ -190,7 +193,7 @@ const LeftColumn: React.FC = () => {
                 </div>
                 <div className="flex items-baseline space-x-1">
                   <span className="value-highlight text-xl font-bold">
-                    {item.value.toFixed(1)}
+                    <AnimatedNumber value={item.value.toFixed(1)} />
                   </span>
                   <span className="text-[10px] text-slate-300 font-black uppercase">
                     KW·H
@@ -205,7 +208,7 @@ const LeftColumn: React.FC = () => {
                       : "bg-slate-500"
                   }`}
                   style={{
-                    width: `${(item.value / ENERGY_RANKING[0].value) * 100}%`,
+                    width: `${(item.value / energyRanking[0].value) * 100}%`,
                   }}
                 ></div>
               </div>

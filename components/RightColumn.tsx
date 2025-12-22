@@ -19,16 +19,12 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import ChartWidget from "./ChartWidget";
-import { ALERTS, ENERGY_SOURCE_MIX, COLORS } from "../constants";
+import { COLORS } from "../constants";
+import { useDashboard } from "../DashboardContext";
+import AnimatedNumber from "./AnimatedNumber";
 
 const RightColumn: React.FC = () => {
-  const kpiData = [
-    { subject: "成本", A: 95, fullMark: 100 },
-    { subject: "碳中和", A: 82, fullMark: 100 },
-    { subject: "安全", A: 99, fullMark: 100 },
-    { subject: "绿能", A: 75, fullMark: 100 },
-    { subject: "在线", A: 88, fullMark: 100 },
-  ];
+  const { alerts, energySourceMix, kpiData } = useDashboard();
 
   return (
     <div className="h-full flex flex-col space-y-4 pr-1 overflow-hidden">
@@ -48,7 +44,7 @@ const RightColumn: React.FC = () => {
       >
         <div className="h-full flex flex-col px-3 pb-3">
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3 pt-3">
-            {ALERTS.map((alert, index) => {
+            {alerts.map((alert, index) => {
               const isSerious = alert.level === "serious";
               const isWarning = alert.level === "warning";
 
@@ -167,7 +163,7 @@ const RightColumn: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={ENERGY_SOURCE_MIX}
+                  data={energySourceMix}
                   cx="50%"
                   cy="50%"
                   innerRadius="55%"
@@ -176,7 +172,7 @@ const RightColumn: React.FC = () => {
                   dataKey="value"
                   nameKey="name"
                 >
-                  {ENERGY_SOURCE_MIX.map((entry, index) => (
+                  {energySourceMix.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={entry.color}
@@ -193,13 +189,16 @@ const RightColumn: React.FC = () => {
                     color: "#fff",
                   }}
                   itemStyle={{ color: "#fff" }}
-                  formatter={(value: number, name: string) => [`${value}%`, name]}
+                  formatter={(value: number, name: string) => [
+                    `${value}%`,
+                    name,
+                  ]}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 mt-2 shrink-0">
-            {ENERGY_SOURCE_MIX.map((item, idx) => (
+            {energySourceMix.map((item, idx) => (
               <div
                 key={idx}
                 className="flex flex-col border-b border-white/5 pb-1 group cursor-help"
@@ -215,7 +214,7 @@ const RightColumn: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-baseline">
                   <span className="text-cyan-300 font-tech font-bold text-xs">
-                    {item.value}%
+                    <AnimatedNumber value={item.value} />%
                   </span>
                   <span className="text-[9px] text-slate-400 font-black uppercase tracking-tighter">
                     {item.subLabel}
