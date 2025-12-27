@@ -151,8 +151,8 @@ export const CENTER_STATS: CenterStat[] = [
   {
     label: "瞬时出力",
     value: "185.2 kW",
-    pos: "top-[50%] left-[2%] -translate-y-1/2",
-    anchor: { x: 8, y: 50 },
+    pos: "top-[50%] left-[8%] -translate-y-1/2",
+    anchor: { x: 14, y: 50 },
     iconName: "Sun",
   },
   {
@@ -173,8 +173,8 @@ export const CENTER_STATS: CenterStat[] = [
   {
     label: "系统谐波",
     value: "2.8 % THD",
-    pos: "top-[50%] right-[2%] -translate-y-1/2",
-    anchor: { x: 92, y: 50 },
+    pos: "top-[50%] right-[8%] -translate-y-1/2",
+    anchor: { x: 86, y: 50 },
     iconName: "Zap",
   },
   {

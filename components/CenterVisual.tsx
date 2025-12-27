@@ -305,7 +305,9 @@ const EnergyLinkLines = () => {
 const CenterVisual: React.FC = () => {
   const { dashboardMeta, centerStats } = useDashboard();
   const [isVisible, setIsVisible] = React.useState(false);
-  const [frameLoop, setFrameLoop] = React.useState<"always" | "demand">("demand");
+  const [frameLoop, setFrameLoop] = React.useState<"always" | "demand">(
+    "demand"
+  );
 
   React.useEffect(() => {
     // 策略：
@@ -316,24 +318,28 @@ const CenterVisual: React.FC = () => {
     const timer = setTimeout(() => {
       setFrameLoop("always");
       setIsVisible(true);
-    }, 1500); 
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="w-full h-full relative overflow-hidden flex items-center justify-center [perspective:2000px]">
       {/* 3D 核心层 */}
-      <div className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <div
+        className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-out ${
+          isVisible ? "opacity-100" : "opacity-0"
+        }`}
+      >
         <Canvas
           shadows
           frameloop={frameLoop}
           dpr={[1, 1.5]} // 降低最大 DPR，优化高分屏性能
-          gl={{ 
-            antialias: true, 
-            alpha: true, 
+          gl={{
+            antialias: true,
+            alpha: true,
             powerPreference: "high-performance",
             stencil: false,
-            depth: true
+            depth: true,
           }}
         >
           <PerspectiveCamera
@@ -378,7 +384,7 @@ const CenterVisual: React.FC = () => {
         {/* 顶部扫描环 */}
         <div className="absolute -top-32 w-48 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-sm animate-pulse"></div>
 
-        <div className="flex flex-col items-center justify-center px-10 py-5 glass-panel bg-slate-900/80 border-cyan-400/30 shadow-[0_0_50px_rgba(0,242,255,0.2)] relative backdrop-blur-md border -translate-y-64 rounded-lg min-w-[280px]">
+        <div className="absolute top-[12%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center px-10 py-5 glass-panel bg-slate-900/80 border-cyan-400/30 shadow-[0_0_50px_rgba(0,242,255,0.2)] backdrop-blur-md border rounded-lg min-w-[280px]">
           {/* 装饰角标 */}
           <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-cyan-400"></div>
           <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-cyan-400"></div>
