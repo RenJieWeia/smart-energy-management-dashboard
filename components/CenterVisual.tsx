@@ -6,12 +6,16 @@ import {
   Sphere,
   PerspectiveCamera,
   Stars,
-  MeshWobbleMaterial,
   Torus,
+  Sparkles,
   Box,
   Cylinder,
+  Edges,
   Icosahedron,
-  Sparkles,
+  Plane,
+  Cone,
+  Ring,
+  QuadraticBezierLine,
 } from "@react-three/drei";
 import * as THREE from "three";
 import {
@@ -27,217 +31,560 @@ import AnimatedNumber from "./AnimatedNumber";
 
 const IconMap = { Leaf, Sun, BatteryCharging, Coins, Zap, BarChart3 };
 
-// 动态负载柱 - 代表不同分区的能耗高度
-// Fix: Use React.FC to allow standard React props like 'key'
-const EnergyLoadPillar: React.FC<{
-  position: [number, number, number];
-  height: number;
+// --- 子组件：传输数据流 (能量光缆) ---
+const DataFlowCable: React.FC<{
+  start: [number, number, number];
+  end: [number, number, number];
   color: string;
-}> = ({ position, height, color }) => {
-  const mesh = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    if (mesh.current) {
-      // 模拟负载波动
-      const pulse = Math.sin(clock.getElapsedTime() * 2 + position[0]) * 0.2;
-      mesh.current.scale.y = height + pulse;
-      mesh.current.position.y = (height + pulse) / 2;
+}> = ({ start, end, color }) => {
+  const lineRef = useRef<any>(null);
+  const startVec = new THREE.Vector3(...start);
+  const endVec = new THREE.Vector3(...end);
+  const midVec = new THREE.Vector3()
+    .addVectors(startVec, endVec)
+    .multiplyScalar(0.5);
+  midVec.y += 1.2; // 拱起高度
+
+  useFrame((state) => {
+    if (lineRef.current) {
+      // 让虚线流动起来
+      lineRef.current.material.dashOffset -= 0.05;
     }
   });
 
   return (
-    <group position={position}>
-      {/* 底部基座 */}
-      <Box args={[0.4, 0.05, 0.4]}>
-        <meshBasicMaterial color="#1e293b" />
-      </Box>
-      {/* 能量柱体 */}
-      <mesh ref={mesh}>
-        <boxGeometry args={[0.3, 1, 0.3]} />
-        <meshStandardMaterial
-          color={color}
-          transparent
-          opacity={0.6}
-          emissive={color}
-          emissiveIntensity={2}
-        />
-      </mesh>
-      {/* 顶部光晕 */}
-      <pointLight
-        position={[0, height, 0]}
-        intensity={1}
+    <group>
+      {/* 底层光晕线 (更宽，更透明) */}
+      <QuadraticBezierLine
+        start={startVec}
+        end={endVec}
+        mid={midVec}
         color={color}
-        distance={2}
+        lineWidth={3}
+        transparent
+        opacity={0.1}
+      />
+      {/* 上层流动的高亮数据线 */}
+      <QuadraticBezierLine
+        ref={lineRef}
+        start={startVec}
+        end={endVec}
+        mid={midVec}
+        color={color} // 根据状态变色
+        lineWidth={2}
+        dashed
+        dashScale={4}
+        dashSize={0.4}
+        gapSize={0.2}
+        transparent
+        opacity={0.8}
       />
     </group>
   );
 };
 
-// 核心能源反应堆 -> 智慧园区数字孪生
-const SmartEnergyReactor = () => {
+// --- 子组件：巡检无人机 ---
+const PatrolDrone: React.FC<{
+  radius: number;
+  speed: number;
+  yOffset: number;
+  color: string;
+}> = ({ radius, speed, yOffset, color }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (groupRef.current) {
+      const t = state.clock.getElapsedTime() * speed;
+      groupRef.current.position.x = Math.sin(t) * radius;
+      groupRef.current.position.z = Math.cos(t) * radius;
+      groupRef.current.position.y = yOffset + Math.sin(t * 3) * 0.2;
+      groupRef.current.lookAt(0, yOffset, 0); // 面向中心
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <Cone args={[0.2, 0.5, 4]} rotation={[Math.PI / 2, 0, 0]}>
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={1}
+        />
+      </Cone>
+      {/* 尾迹 */}
+      <Torus args={[0.15, 0.02, 8, 16]} rotation={[0, 0, 0]}>
+        <meshBasicMaterial color={color} transparent opacity={0.5} />
+      </Torus>
+    </group>
+  );
+};
+
+// --- 子组件：复合科技建筑 ---
+const ComplexBuilding: React.FC<{
+  position: [number, number, number];
+  size: [number, number, number];
+  color: string;
+  isAlert: boolean;
+  type: string;
+}> = ({ position, size, color, isAlert, type }) => {
+  const [w, h, d] = size;
+
+  // 随机生成的建筑细节配置 (利用 useMemo 避免每帧重新生成)
+  const details = useMemo(() => {
+    // 顶部天线
+    const antennas = [];
+    if (Math.random() > 0.3) {
+      antennas.push({
+        pos: [w * 0.25, h / 2, d * 0.25],
+        h: 0.3 + Math.random() * 0.5,
+      });
+    }
+    if (Math.random() > 0.6) {
+      antennas.push({
+        pos: [-w * 0.25, h / 2, -d * 0.25],
+        h: 0.2 + Math.random() * 0.3,
+      });
+    }
+
+    // 侧面结构 (外骨架/通风管道)
+    const sideStructs = [];
+    if (type === "server") {
+      // 服务器机柜有特殊的散热片
+      for (let i = 0; i < 3; i++) {
+        sideStructs.push({
+          pos: [w / 2 + 0.05, -h / 4 + i * (h / 4), 0],
+          size: [0.1, 0.05, d * 0.8],
+        });
+      }
+    }
+
+    return { antennas, sideStructs };
+  }, [w, h, d, type]);
+
+  return (
+    <group position={position}>
+      {/* 1. 建筑主体 */}
+      <Box args={[w, h, d]}>
+        <meshStandardMaterial
+          color={color}
+          transparent
+          opacity={type === "server" ? 0.8 : 0.95}
+          // 报警状态下自发光增强
+          emissive={isAlert ? color : "#000000"}
+          emissiveIntensity={isAlert ? 1 : type === "server" ? 0.2 : 0}
+          roughness={0.2}
+          metalness={0.8}
+        />
+        <Edges
+          color={
+            isAlert ? "#ef4444" : type === "server" ? "#7dd3fc" : "#475569"
+          }
+          threshold={15}
+        />
+      </Box>
+
+      {/* 2. 内部发光核心 (仅对非报警的建筑，增加科技感) */}
+      {!isAlert && type !== "server" && (
+        <Box args={[w * 0.6, h * 0.9, d * 0.6]}>
+          <meshBasicMaterial color="#0ea5e9" transparent opacity={0.2} />
+        </Box>
+      )}
+
+      {/* 3. 顶部细节：天线与指示灯 */}
+      {details.antennas.map((ant, i) => (
+        <group key={`ant-${i}`} position={ant.pos as [number, number, number]}>
+          <Cylinder args={[0.02, 0.02, ant.h, 4]} position={[0, ant.h / 2, 0]}>
+            <meshBasicMaterial color="#94a3b8" />
+          </Cylinder>
+          {/* 警示红灯常亮，普通天线闪烁 */}
+          <pointLight
+            distance={0.5}
+            intensity={2}
+            color="#ef4444"
+            position={[0, ant.h, 0]}
+          />
+          <mesh position={[0, ant.h, 0]}>
+            <sphereGeometry args={[0.05]} />
+            <meshBasicMaterial color="#ef4444" />
+          </mesh>
+        </group>
+      ))}
+
+      {/* 4. 侧面结构细节 */}
+      {details.sideStructs.map((s, i) => (
+        <Box
+          key={`side-${i}`}
+          args={s.size as [number, number, number]}
+          position={s.pos as [number, number, number]}
+        >
+          <meshStandardMaterial
+            color={type === "server" ? "#22d3ee" : "#334155"}
+          />
+          <Edges color="#22d3ee" transparent opacity={0.5} />
+        </Box>
+      ))}
+
+      {/* 5. 窗户纹理层 (使用简单的片模型模拟灯光) */}
+      {!isAlert && type === "building" && (
+        <group>
+          {/* 正面窗户 */}
+          {[...Array(Math.max(2, Math.floor(h / 0.4)))].map((_, i) => (
+            <mesh
+              key={`win-f-${i}`}
+              position={[0, -h / 2 + 0.4 + i * 0.4, d / 2 + 0.01]}
+            >
+              <planeGeometry args={[w * 0.6, 0.15]} />
+              <meshBasicMaterial color="#38bdf8" />
+            </mesh>
+          ))}
+          {/* 侧面窗户 */}
+          {[...Array(Math.max(2, Math.floor(h / 0.4)))].map((_, i) => (
+            <mesh
+              key={`win-r-${i}`}
+              position={[w / 2 + 0.01, -h / 2 + 0.4 + i * 0.4, 0]}
+              rotation={[0, Math.PI / 2, 0]}
+            >
+              <planeGeometry args={[d * 0.6, 0.15]} />
+              <meshBasicMaterial color="#38bdf8" />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* 6. 顶部停机坪/设备层 */}
+      <group position={[0, h / 2 + 0.05, 0]}>
+        <Box args={[w * 0.8, 0.1, d * 0.8]}>
+          <meshStandardMaterial color="#1e293b" />
+          <Edges color="#64748b" />
+        </Box>
+        {isAlert && (
+          <mesh position={[0, 0.1, 0]}>
+            <cylinderGeometry args={[0.2, 0.2, 0.05, 8]} />
+            <meshBasicMaterial color="#ef4444" toneMapped={false} />
+          </mesh>
+        )}
+      </group>
+    </group>
+  );
+};
+
+// Helper component for animated buildings
+const BuildingGroup: React.FC<{ item: any; index: number }> = ({
+  item,
+  index,
+}) => {
   const groupRef = useRef<THREE.Group>(null);
 
-  // 生成城市建筑群布局
-  const buildings = useMemo(() => {
-    const items = [];
-    // 中央控制塔
-    items.push({
-      pos: [0, 1.2, 0],
-      size: [0.8, 2.4, 0.8],
-      color: "#00f2ff",
-      isMain: true,
-    });
+  useFrame((state) => {
+    // 升降动画逻辑：基于时间与索引的波浪运动
+    if (groupRef.current && item.isLifting) {
+      const t = state.clock.getElapsedTime();
+      // 使用缓慢的正弦波实现“呼吸式”升降，而非快速跳动
+      // 将速度减慢至 0.5，幅度减小至 0.3
+      const yOffset = Math.sin(t * 0.5 + index) * 0.3;
+      groupRef.current.position.y = item.pos[1] + yOffset;
+    }
+  });
 
-    // 周边建筑群
-    for (let x = -2; x <= 2; x++) {
-      for (let z = -2; z <= 2; z++) {
-        if (x === 0 && z === 0) continue; // 跳过中心
-        // 随机生成建筑
-        if (Math.random() > 0.4) {
-          const height = 0.3 + Math.random() * 1.0;
-          const isHighLoad = Math.random() > 0.9; // 红色高负载节点
-          items.push({
-            pos: [x * 0.6, height / 2, z * 0.6],
-            size: [0.4, height, 0.4],
-            color: isHighLoad ? "#ef4444" : "#3b82f6",
-            isHighLoad,
-            isMain: false,
-          });
-        }
-      }
+  return (
+    <group ref={groupRef} position={item.pos as [number, number, number]}>
+      {/* 建筑主体 */}
+      <Box args={item.size as [number, number, number]}>
+        <meshStandardMaterial
+          color={item.color}
+          transparent
+          opacity={item.type === "server" ? 0.8 : 0.95}
+          // 升降块自发光增强
+          emissive={
+            item.isLifting
+              ? item.color
+              : item.type === "server"
+              ? item.color
+              : "#000000"
+          }
+          emissiveIntensity={
+            item.isLifting ? 0.8 : item.type === "server" ? 0.3 : 0
+          }
+          roughness={0.2}
+          metalness={0.8}
+        />
+        <Edges
+          color={
+            item.type === "server"
+              ? "#7dd3fc"
+              : item.isLifting
+              ? "#22d3ee"
+              : "#475569"
+          }
+          threshold={15}
+        />
+      </Box>
+
+      {/* 裙楼结构 */}
+      {item.hasPodium && (
+        <Box
+          args={[item.size[0] * 1.5, 0.2, item.size[2] * 1.5]}
+          position={[0, -item.size[1] / 2 + 0.1, 0]}
+        >
+          <meshStandardMaterial color={item.color} roughness={0.2} />
+          <Edges color="#475569" />
+        </Box>
+      )}
+
+      {/* 建筑窗户纹理模拟 */}
+      {item.type === "building" && !item.isLifting && (
+        <group>
+          {[...Array(Math.floor(item.size[1] / 0.4))].map((_, idx) => (
+            <mesh
+              key={idx}
+              position={[
+                0,
+                -item.size[1] / 2 + 0.3 + idx * 0.4,
+                item.size[2] / 2 + 0.01,
+              ]}
+            >
+              <planeGeometry args={[item.size[0] * 0.6, 0.05]} />
+              <meshBasicMaterial color="#38bdf8" />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* 顶部指示灯 */}
+      {item.type === "building" && (
+        <mesh
+          position={[0, item.size[1] / 2 + 0.05, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <planeGeometry args={[item.size[0] * 0.8, item.size[2] * 0.8]} />
+          <meshBasicMaterial
+            color={item.isLifting ? "#ffffff" : "#0ea5e9"}
+            transparent
+            opacity={0.8}
+          />
+        </mesh>
+      )}
+
+      {/* 服务器机柜细节 */}
+      {item.type === "server" && (
+        <group>
+          {[...Array(6)].map((_, j) => (
+            <mesh
+              key={j}
+              position={[
+                0,
+                -item.size[1] / 2 + 0.2 + j * 0.35,
+                item.size[2] / 2 + 0.01,
+              ]}
+            >
+              <planeGeometry args={[0.4, 0.1]} />
+              <meshBasicMaterial color={j === 0 ? "#22d3ee" : "#7dd3fc"} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* 能量传输光缆 (升降块不显示光缆) */}
+      {!item.isLifting && item.type === "building" && (
+        <group>
+          <DataFlowCable
+            start={[0, item.size[1] / 2, 0]}
+            end={[-item.pos[0], 2 - item.pos[1], -item.pos[2]] as any}
+            color="#22d3ee"
+          />
+        </group>
+      )}
+    </group>
+  );
+};
+
+// 城市能耗全景模型 - 结合数据中心与智慧城市概念
+const EnergyConsumptionModel = () => {
+  const groupRef = useRef<THREE.Group>(null);
+
+  // 缓慢自转
+  useFrame((state) => {
+    const time = state.clock.getElapsedTime();
+    if (groupRef.current) {
+      groupRef.current.rotation.y = time * 0.05;
+    }
+  });
+
+  // 生成城市建筑群布局
+  const cityLayout = useMemo(() => {
+    const items = [];
+
+    // 内圈：核心服务器机组 (Data Center Racks)
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const x = Math.cos(angle) * 1.5;
+      const z = Math.sin(angle) * 1.5;
+      items.push({
+        pos: [x, 0.4, z],
+        size: [0.6, 2.2, 0.6],
+        type: "server",
+        color: "#0ea5e9",
+        isLifting: false,
+      });
+    }
+
+    // 中间层：普通城市建筑群 (City Buildings)
+    for (let i = 0; i < 18; i++) {
+      const angle = (i / 18) * Math.PI * 2 + Math.random() * 0.5; // 随机分布
+      const dist = 3.0 + Math.random() * 1.8; // 如果有升降块在远方，这里的范围控制在 3~4.8
+      const x = Math.cos(angle) * dist;
+      const z = Math.sin(angle) * dist; // 修正变量名错误
+
+      const height = 1.0 + Math.random() * 2.5;
+      const hasPodium = Math.random() > 0.5;
+
+      items.push({
+        pos: [x, height / 2 - 0.8, z],
+        size: [0.5 + Math.random() * 0.3, height, 0.5 + Math.random() * 0.3],
+        type: "building",
+        isLifting: false,
+        color: Math.random() > 0.5 ? "#1e293b" : "#334155",
+        hasPodium,
+        podiumSize: [1.2, 0.3, 1.2],
+      });
+    }
+
+    // 最外圈：6个守护升降块 (Lifting Blocks)
+    // 围绕底座 (底座半径约 6.0)，放置在半径 6.5 处
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2; // 均匀分布
+      const dist = 6.5;
+
+      const x = Math.cos(angle) * dist;
+      const z = Math.sin(angle) * dist;
+      const height = 1.6; // 块体高度
+
+      items.push({
+        pos: [x, -0.5, z], // 初始高度位置
+        size: [0.8, height, 0.8], // 块体尺寸
+        type: "building",
+        isLifting: true,
+        color: "#00f2ff",
+        hasPodium: false,
+      });
     }
     return items;
   }, []);
 
-  // 模拟道路交通流
-  const traffic = useMemo(() => {
-    return Array.from({ length: 20 }, () => ({
-      x: (Math.random() - 0.5) * 4,
-      z: (Math.random() - 0.5) * 4,
-      speed: 0.5 + Math.random() * 0.5,
-      dir: Math.random() > 0.5 ? 1 : -1,
-      axis: Math.random() > 0.5 ? "x" : "z",
-    }));
-  }, []);
-
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    if (groupRef.current) {
-      groupRef.current.rotation.y = time * 0.1; // 整体缓慢旋转
-    }
-  });
-
-  // 外部供电塔位置
-  const pillars = useMemo(
-    () => [
-      { pos: [3.0, -0.5, 0] as [number, number, number], h: 2.0, c: "#00f2ff" },
-      {
-        pos: [-3.0, -0.5, 0] as [number, number, number],
-        h: 1.5,
-        c: "#3b82f6",
-      },
-      {
-        pos: [1.5, -0.5, 2.6] as [number, number, number],
-        h: 2.5,
-        c: "#10b981",
-      },
-      {
-        pos: [-1.5, -0.5, -2.6] as [number, number, number],
-        h: 1.8,
-        c: "#f59e0b",
-      },
-      {
-        pos: [1.5, -0.5, -2.6] as [number, number, number],
-        h: 1.2,
-        c: "#00f2ff",
-      },
-      {
-        pos: [-1.5, -0.5, 2.6] as [number, number, number],
-        h: 2.2,
-        c: "#3b82f6",
-      },
-    ],
-    []
-  );
-
   return (
-    <group ref={groupRef}>
-      {/* 园区基座 */}
-      <Cylinder args={[3.2, 3.2, 0.2, 6]} position={[0, -0.1, 0]}>
-        <meshStandardMaterial color="#0f172a" transparent opacity={0.9} />
-      </Cylinder>
-      <Cylinder args={[3.3, 3.3, 0.05, 6]} position={[0, -0.1, 0]}>
-        <meshBasicMaterial
-          color="#00f2ff"
-          wireframe
-          transparent
-          opacity={0.3}
-        />
-      </Cylinder>
+    <group ref={groupRef} scale={0.65}>
+      {/* --- 中央控制塔 (The Hub) --- */}
+      <group position={[0, 0.5, 0]}>
+        {/* 主塔主体 - 增加内部发光柱 */}
+        <Cylinder args={[0.3, 0.3, 4.5, 16]}>
+          <meshBasicMaterial color="#a5f3fc" />
+        </Cylinder>
+        {/* 外部玻璃壳 */}
+        <Cylinder args={[0.8, 0.8, 4.5, 8]}>
+          <meshStandardMaterial
+            color="#06b6d4"
+            transparent
+            opacity={0.4}
+            roughness={0}
+          />
+          <Edges color="#ccfbf1" threshold={15} transparent opacity={0.5} />
+        </Cylinder>
 
-      {/* 地面网格装饰 */}
-      <gridHelper args={[6, 20, 0x1e293b, 0x1e293b]} position={[0, 0.01, 0]} />
-
-      {/* 建筑群 */}
-      {buildings.map((b, i) => (
-        <group key={i} position={b.pos as [number, number, number]}>
-          {/* 建筑主体 */}
-          <Box args={b.size as [number, number, number]}>
-            <meshStandardMaterial
-              color={b.color}
-              transparent
-              opacity={0.9}
-              emissive={b.color}
-              emissiveIntensity={b.isHighLoad ? 2 : b.isMain ? 0.8 : 0.2}
-              roughness={0.2}
-              metalness={0.8}
-            />
-          </Box>
-          {/* 建筑线框 */}
-          <Box args={[b.size[0], b.size[1], b.size[2]]}>
-            <meshBasicMaterial
-              color={b.isHighLoad ? "#fca5a5" : "#bae6fd"}
-              wireframe
-              transparent
-              opacity={0.15}
-            />
-          </Box>
-          {/* 顶部状态灯 */}
-          {b.isHighLoad && (
-            <pointLight
-              position={[0, b.size[1] / 2 + 0.2, 0]}
-              color="#ef4444"
-              intensity={2}
-              distance={1}
-            />
-          )}
+        {/* 塔顶复杂结构 */}
+        <group position={[0, 2.5, 0]}>
+          <Float speed={5} rotationIntensity={0} floatIntensity={0}>
+            <Torus args={[1.2, 0.05, 4, 32]} rotation={[Math.PI / 2, 0, 0]}>
+              <meshBasicMaterial color="#ffffff" />
+            </Torus>
+          </Float>
+          {/* 旋转雷达 */}
+          <group rotation={[0, 0, 0]}>
+            <mesh position={[0, 0.5, 0]} rotation={[0, 0, 0]}>
+              <Cone args={[0.5, 1, 4]} rotation={[0, 0, 0]}>
+                <meshStandardMaterial color="#22d3ee" wireframe />
+              </Cone>
+            </mesh>
+          </group>
         </group>
+
+        {/* 环绕的数据流环 */}
+        <Torus
+          args={[1.0, 0.02, 16, 64]}
+          position={[0, 0, 0]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <meshBasicMaterial color="#22d3ee" />
+        </Torus>
+        <Torus
+          args={[1.1, 0.02, 16, 64]}
+          position={[0, 1.0, 0]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <meshBasicMaterial color="#22d3ee" />
+        </Torus>
+        <Torus
+          args={[0.9, 0.02, 16, 64]}
+          position={[0, -1.0, 0]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <meshBasicMaterial color="#22d3ee" />
+        </Torus>
+      </group>
+
+      {/* --- 城市/机房建筑群 --- */}
+      {cityLayout.map((item, i) => (
+        <BuildingGroup key={i} item={item} index={i} />
       ))}
 
-      {/* 交通流粒子 */}
+      {/* --- 巡检无人机 --- */}
+      {/* <PatrolDrone radius={2.5} speed={0.8} yOffset={2} color="#fcd34d" />
+      <PatrolDrone radius={4.2} speed={-0.6} yOffset={1.5} color="#22d3ee" /> */}
+
+      {/* --- 底座平台 --- */}
+      {/* 调整底座高度，使其与建筑底部 (-0.8左右) 接壤，不再悬空 */}
+      <group position={[0, -1, 0]}>
+        <Cylinder args={[5.5, 6.0, 0.5, 64]}>
+          <meshStandardMaterial color="#020617" />
+          <Edges color="#1e40af" transparent opacity={0.5} />
+        </Cylinder>
+        {/* 全息底盘 UI */}
+        <Ring
+          args={[2.5, 2.6, 64]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.27, 0]}
+        >
+          <meshBasicMaterial color="#0ea5e9" opacity={0.5} transparent />
+        </Ring>
+        <Ring
+          args={[4.5, 4.6, 64]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.27, 0]}
+        >
+          <meshBasicMaterial color="#0ea5e9" opacity={0.3} transparent />
+        </Ring>
+
+        {/* 科技网格 */}
+        <gridHelper
+          args={[16, 16, 0x0ea5e9, 0x1e293b]}
+          position={[0, 0.26, 0]}
+        />
+
+        {/* 底部扩散波 */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.3, 0]}>
+          <ringGeometry args={[0, 6, 64]} />
+          <meshBasicMaterial color="#0ea5e9" transparent opacity={0.05} />
+        </mesh>
+      </group>
+
+      {/* --- 全局动态粒子 --- */}
       <Sparkles
-        count={50}
-        scale={4}
-        size={2}
-        speed={0.4}
-        opacity={0.5}
-        color="#00f2ff"
-        position={[0, 0.5, 0]}
+        count={150}
+        scale={10}
+        size={3}
+        speed={0.8}
+        opacity={0.6}
+        color="#bae6fd"
+        position={[0, 2, 0]}
       />
-
-      {/* 扫描光环 */}
-      <Torus args={[2.8, 0.02, 16, 100]} rotation={[Math.PI / 2, 0, 0]}>
-        <meshBasicMaterial color="#00f2ff" transparent opacity={0.3} />
-      </Torus>
-
-      {/* 动态能量环 - 模拟园区微网 */}
-      <Torus args={[1.8, 0.01, 16, 64]} rotation={[Math.PI / 2, 0, 0]}>
-        <meshBasicMaterial color="#10b981" transparent opacity={0.4} />
-      </Torus>
-
-      {/* 外部负载柱阵 - 变电站节点 */}
-      {pillars.map((p, i) => (
-        <EnergyLoadPillar key={i} position={p.pos} height={p.h} color={p.c} />
-      ))}
     </group>
   );
 };
@@ -342,6 +689,7 @@ const CenterVisual: React.FC = () => {
             depth: true,
           }}
         >
+          <color attach="background" args={["#0f172a"]} />
           <PerspectiveCamera
             makeDefault
             position={[0, 5, 12]}
@@ -365,7 +713,7 @@ const CenterVisual: React.FC = () => {
             speed={0.5}
           />
           <Float speed={2} rotationIntensity={0.2} floatIntensity={0.4}>
-            <SmartEnergyReactor />
+            <EnergyConsumptionModel />
           </Float>
         </Canvas>
       </div>
