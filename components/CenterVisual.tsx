@@ -277,11 +277,21 @@ const BuildingGroup: React.FC<{ item: any; index: number }> = ({
   useFrame((state) => {
     // 升降动画逻辑：基于时间与索引的波浪运动
     if (groupRef.current && item.isLifting) {
-      const t = state.clock.getElapsedTime();
-      // 使用缓慢的正弦波实现“呼吸式”升降，而非快速跳动
-      // 将速度减慢至 0.5，幅度减小至 0.3
-      const yOffset = Math.sin(t * 0.5 + index) * 0.3;
-      groupRef.current.position.y = item.pos[1] + yOffset;
+       const t = state.clock.getElapsedTime();
+       
+       // "呼吸感"高度伸缩动画
+       // 减小变化幅度：scale ±0.2
+       // 减慢频率：1.5 -> 0.8
+       const scale = 1 + Math.sin(t * 0.8 + index) * 0.2; 
+       
+       groupRef.current.scale.y = scale;
+       
+       // 关键：为了让底部贴紧底座不动，需要根据缩放补偿 Y 轴位置
+       // 原始高度 item.size[1]，底座高度 -0.75
+       // 新的中心点 Y = 底座Y + (原始高度 * 缩放比例) / 2
+       const baseY = -0.75; 
+       const newHeight = item.size[1] * scale;
+       groupRef.current.position.y = baseY + newHeight / 2;
     }
   });
 
@@ -442,24 +452,29 @@ const EnergyConsumptionModel = () => {
         size: [0.5 + Math.random() * 0.3, height, 0.5 + Math.random() * 0.3],
         type: "building",
         isLifting: false,
-        color: Math.random() > 0.5 ? "#1e293b" : "#334155",
+        // 提亮建筑颜色：使用 Slate-600 / Slate-500，甚至带点蓝灰
+        color: Math.random() > 0.5 ? '#475569' : '#64748b',
         hasPodium,
         podiumSize: [1.2, 0.3, 1.2],
       });
     }
 
-    // 最外圈：6个守护升降块 (Lifting Blocks)
-    // 围绕底座 (底座半径约 6.0)，放置在半径 6.5 处
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2; // 均匀分布
-      const dist = 6.5;
+    // 最外圈：5个守护升降块 (Lifting Blocks)
+    // 围绕底座
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI * 2; // 均匀分布
+      const dist = 5.6; // 稍微往里靠，贴近底座边缘 (底座顶部半径5.5)
 
       const x = Math.cos(angle) * dist;
       const z = Math.sin(angle) * dist;
-      const height = 1.6; // 块体高度
+      
+      // 高度变化大一些：2.0 到 4.5 之间
+      const height = 2.0 + Math.random() * 2.5;
 
       items.push({
-        pos: [x, -0.5, z], // 初始高度位置
+        // 调整初始高度位置，使其大约坐落在底座之上
+        // 底座上表面约在 -0.75 (y=-1, height=0.5 -> top=-0.75)
+        pos: [x, -0.75 + height / 2, z], 
         size: [0.8, height, 0.8], // 块体尺寸
         type: "building",
         isLifting: true,
@@ -543,8 +558,8 @@ const EnergyConsumptionModel = () => {
       {/* 调整底座高度，使其与建筑底部 (-0.8左右) 接壤，不再悬空 */}
       <group position={[0, -1, 0]}>
         <Cylinder args={[5.5, 6.0, 0.5, 64]}>
-          <meshStandardMaterial color="#020617" />
-          <Edges color="#1e40af" transparent opacity={0.5} />
+             <meshStandardMaterial color="#0f172a" />
+             <Edges color="#3b82f6" transparent opacity={0.5} />
         </Cylinder>
         {/* 全息底盘 UI */}
         <Ring
@@ -689,18 +704,18 @@ const CenterVisual: React.FC = () => {
             depth: true,
           }}
         >
-          <color attach="background" args={["#0f172a"]} />
+          <color attach="background" args={['#111827']} />
           <PerspectiveCamera
             makeDefault
             position={[0, 5, 12]}
             fov={35}
             rotation={[-0.3, 0, 0]}
           />
-          <ambientLight intensity={0.3} />
+          <ambientLight intensity={0.8} />
           <pointLight
-            position={[5, 5, 5]}
-            intensity={1.5}
-            color="#00f2ff"
+            position={[10, 10, 10]}
+            intensity={3.0}
+            color="#22d3ee"
             castShadow
           />
           <Stars
@@ -732,7 +747,7 @@ const CenterVisual: React.FC = () => {
         {/* 顶部扫描环 */}
         <div className="absolute -top-32 w-48 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-sm animate-pulse"></div>
 
-        <div className="absolute top-[12%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center px-10 py-5 glass-panel bg-slate-900/80 border-cyan-400/30 shadow-[0_0_50px_rgba(0,242,255,0.2)] backdrop-blur-md border rounded-lg min-w-[280px]">
+        <div className="absolute top-[12%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center px-10 py-5 glass-panel bg-slate-800/80 border-cyan-400/50 shadow-[0_0_50px_rgba(0,242,255,0.2)] backdrop-blur-md border rounded-lg min-w-[280px]">
           {/* 装饰角标 */}
           <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-cyan-400"></div>
           <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-cyan-400"></div>
@@ -742,7 +757,7 @@ const CenterVisual: React.FC = () => {
           {/* 顶部标签 */}
           <div className="flex items-center space-x-2 mb-1">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span className="text-white/50 font-black text-[10px] tracking-[0.3em] uppercase">
+            <span className="text-cyan-100/60 font-black text-[10px] tracking-[0.3em] uppercase">
               Energy Core Status
             </span>
           </div>
@@ -790,23 +805,23 @@ const CenterVisual: React.FC = () => {
                   className={`absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-cyan-400 opacity-50`}
                 ></div>
 
-                <div className="glass-panel px-5 py-4 bg-slate-900/95 backdrop-blur-3xl min-w-[150px] border-cyan-500/20 group-hover/stat:border-cyan-400/60 transition-all shadow-2xl overflow-hidden">
+                <div className="glass-panel px-5 py-4 bg-slate-800/90 backdrop-blur-3xl min-w-[150px] border-cyan-400/40 group-hover/stat:border-cyan-400/80 transition-all shadow-2xl overflow-hidden">
                   {/* 动态背景斜纹 */}
                   <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,242,255,0.03)_25%,transparent_25%,transparent_50%,rgba(0,242,255,0.03)_50%,rgba(0,242,255,0.03)_75%,transparent_75%,transparent)] bg-[size:10px_10px] opacity-20"></div>
 
                   <div className="flex items-center space-x-3 mb-2 relative z-10">
                     <div className="p-1.5 rounded-lg bg-cyan-400/10 border border-cyan-400/30 group-hover/stat:bg-cyan-400/20 transition-colors">
-                      <Icon size={14} className="text-cyan-300 shrink-0" />
+                      <Icon size={14} className="text-cyan-200 shrink-0" />
                     </div>
-                    <span className="text-white/90 text-xs font-bold tracking-wider uppercase truncate">
+                    <span className="text-white text-xs font-bold tracking-wider uppercase truncate">
                       {stat.label}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between relative z-10">
-                    <span className="text-cyan-300 font-tech font-bold text-xl drop-shadow-[0_0_10px_rgba(0,242,255,0.5)]">
+                    <span className="text-cyan-200 font-tech font-bold text-xl drop-shadow-[0_0_10px_rgba(0,242,255,0.5)]">
                       <AnimatedNumber value={stat.value.split(" ")[0]} />
                     </span>
-                    <span className="text-[10px] text-slate-300 font-bold ml-2 uppercase">
+                    <span className="text-[10px] text-cyan-200 font-bold ml-2 uppercase">
                       {stat.value.split(" ")[1] || ""}
                     </span>
                   </div>
