@@ -19,7 +19,7 @@ import {
   MOCK_MONTHLY_CARBON_TREND,
   MOCK_BOTTOM_STATS,
   MOCK_KPI_DATA,
-} from '../data';
+} from '../data/mockData';
 import { IDashboardApi, RealDashboardApi, API_CONFIG } from './api';
 
 // ============ 工具函数 ============

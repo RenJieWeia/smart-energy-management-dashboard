@@ -1,6 +1,6 @@
 import React from "react";
 import { ShieldCheck, Database, BellDot, Cpu, Network } from "lucide-react";
-import { useDashboard } from "../DashboardContext";
+import { useDashboard } from "../../contexts/DashboardContext";
 
 interface HeaderProps {
   currentTime: Date;

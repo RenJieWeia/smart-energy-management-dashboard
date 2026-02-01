@@ -18,10 +18,10 @@ import {
   Activity,
   ShieldAlert,
 } from "lucide-react";
-import ChartWidget from "./ChartWidget";
-import { COLORS } from "../constants";
-import { useDashboard } from "../DashboardContext";
-import AnimatedNumber from "./AnimatedNumber";
+import ChartWidget from "../common/ChartWidget";
+import { COLORS } from "../../data/colors";
+import { useDashboard } from "../../contexts/DashboardContext";
+import AnimatedNumber from "../common/AnimatedNumber";
 
 const RightColumn: React.FC = () => {
   const { alerts, energySourceMix, kpiData } = useDashboard();

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Header from './components/Header';
-import LeftColumn from './components/LeftColumn';
-import RightColumn from './components/RightColumn';
-import CenterVisual from './components/CenterVisual';
-import BottomRow from './components/BottomRow';
-import { DashboardProvider } from './DashboardContext';
+import Header from './components/layout/Header';
+import LeftColumn from './components/layout/LeftColumn';
+import RightColumn from './components/layout/RightColumn';
+import CenterVisual from './components/layout/CenterVisual';
+import BottomRow from './components/layout/BottomRow';
+import { DashboardProvider } from './contexts/DashboardContext';
 
 const App: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());

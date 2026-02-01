@@ -9,10 +9,10 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import ChartWidget from "./ChartWidget";
-import { COLORS } from "../constants";
-import { useDashboard } from "../DashboardContext";
-import AnimatedNumber from "./AnimatedNumber";
+import ChartWidget from "../common/ChartWidget";
+import { COLORS } from "../../data/colors";
+import { useDashboard } from "../../contexts/DashboardContext";
+import AnimatedNumber from "../common/AnimatedNumber";
 
 const BottomRow: React.FC = () => {
   const { monthlyCarbonTrend, renewableSubstitutionData, bottomStats } = useDashboard();

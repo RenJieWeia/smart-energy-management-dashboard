@@ -12,10 +12,10 @@ import {
   PieChart,
   Pie,
 } from "recharts";
-import ChartWidget from "./ChartWidget";
-import { COLORS } from "../constants";
-import { useDashboard } from "../DashboardContext";
-import AnimatedNumber from "./AnimatedNumber";
+import ChartWidget from "../common/ChartWidget";
+import { COLORS } from "../../data/colors";
+import { useDashboard } from "../../contexts/DashboardContext";
+import AnimatedNumber from "../common/AnimatedNumber";
 
 const LeftColumn: React.FC = () => {
   const { todayEnergyTrend, energyRanking, peakValleyDistribution } =
