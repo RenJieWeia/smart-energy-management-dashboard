@@ -1,37 +1,21 @@
 import React from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
-} from "recharts";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Info,
-  MapPin,
-  Activity,
-  ShieldAlert,
-} from "lucide-react";
-import ChartWidget from "./ChartWidget";
-import { COLORS } from "../constants";
-import { useDashboard } from "../DashboardContext";
-import AnimatedNumber from "./AnimatedNumber";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { MapPin, Activity, ShieldAlert } from "lucide-react";
+import ChartWidget from "../common/ChartWidget";
+import { COLORS } from "../../data/colors";
+import { useDashboard } from "../../contexts/DashboardContext";
+import AnimatedNumber from "../common/AnimatedNumber";
+import { DeviceStatusList, EnergyMeterChart } from "../hummingbird";
 
 const RightColumn: React.FC = () => {
-  const { alerts, energySourceMix, kpiData } = useDashboard();
+  const { alerts, energySourceMix } = useDashboard();
 
   return (
     <div className="h-full flex flex-col space-y-4 pr-1 overflow-hidden">
       {/* 实时异常监测 - 深度重构 */}
       <ChartWidget
         title="网格安全实时监测"
-        className="flex-[1.8] min-h-0"
+        className="flex-[1.2] min-h-0"
         noPadding
         headerAction={
           <div className="flex items-center space-x-2 mr-2">
@@ -51,13 +35,13 @@ const RightColumn: React.FC = () => {
               const baseColor = isSerious
                 ? "rgba(239, 68, 68, 1)"
                 : isWarning
-                ? "rgba(245, 158, 11, 1)"
-                : "rgba(34, 211, 238, 1)";
+                  ? "rgba(245, 158, 11, 1)"
+                  : "rgba(34, 211, 238, 1)";
               const glowColor = isSerious
                 ? "rgba(239, 68, 68, 0.4)"
                 : isWarning
-                ? "rgba(245, 158, 11, 0.3)"
-                : "rgba(34, 211, 238, 0.2)";
+                  ? "rgba(245, 158, 11, 0.3)"
+                  : "rgba(34, 211, 238, 0.2)";
 
               return (
                 <div
@@ -110,8 +94,8 @@ const RightColumn: React.FC = () => {
                           {isSerious
                             ? "Critical System Failure"
                             : isWarning
-                            ? "Abnormal Deviation"
-                            : "System Information"}
+                              ? "Abnormal Deviation"
+                              : "System Information"}
                         </span>
                       </div>
                       <span className="font-tech text-[10px] text-white/40 group-hover:text-white/80 transition-colors bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
@@ -156,103 +140,10 @@ const RightColumn: React.FC = () => {
         </div>
       </ChartWidget>
 
-      {/* 能源来源构成 */}
-      <ChartWidget title="混合能源供给结构" className="flex-[1.2] min-h-0">
-        <div className="h-full flex flex-col min-h-0">
-          <div className="flex-[1.2] min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={energySourceMix}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="55%"
-                  outerRadius="85%"
-                  paddingAngle={4}
-                  dataKey="value"
-                  nameKey="name"
-                >
-                  {energySourceMix.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                      stroke="none"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(1, 10, 25, 0.98)",
-                    border: "1px solid #00f2ff",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    color: "#fff",
-                  }}
-                  itemStyle={{ color: "#fff" }}
-                  formatter={(value: number, name: string) => [
-                    `${value}%`,
-                    name,
-                  ]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 mt-2 shrink-0">
-            {energySourceMix.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col border-b border-white/5 pb-1 group cursor-help"
-              >
-                <div className="flex items-center space-x-1.5 mb-1">
-                  <div
-                    className="w-2 h-2 rounded-full shrink-0 group-hover:scale-125 transition-transform"
-                    style={{ backgroundColor: item.color }}
-                  ></div>
-                  <span className="text-slate-100 text-[11px] font-black truncate">
-                    {item.name}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-cyan-300 font-tech font-bold text-xs">
-                    <AnimatedNumber value={item.value} />%
-                  </span>
-                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-tighter">
-                    {item.subLabel}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </ChartWidget>
-
-      {/* 综合效能评估 */}
-      <ChartWidget title="综合能效管理 KPI" className="flex-[1.1] min-h-0">
-        <div className="h-full w-full flex items-center justify-center">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="65%" data={kpiData}>
-              <PolarGrid stroke="rgba(255,255,255,0.1)" />
-              <PolarAngleAxis
-                dataKey="subject"
-                tick={{ fill: "#e2e8f0", fontSize: 10, fontWeight: "bold" }}
-              />
-              <Radar
-                name="目标达成"
-                dataKey="A"
-                stroke={COLORS.primary}
-                fill={COLORS.primary}
-                fillOpacity={0.4}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(1, 10, 25, 0.95)",
-                  border: "1px solid #00f2ff",
-                  fontSize: "11px",
-                  fontWeight: "bold",
-                }}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
+      {/* 设备实时监控 - 蜂鸟物联数据 */}
+      <ChartWidget title="设备运行状态" className="flex-[2] min-h-0" noPadding>
+        <div className="h-full p-2 overflow-hidden">
+          <DeviceStatusList />
         </div>
       </ChartWidget>
     </div>

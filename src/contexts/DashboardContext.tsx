@@ -12,8 +12,8 @@ import type {
   RenewableSubstitutionData,
   PhaseQualityData,
   BottomStats,
-} from './types';
-import { dashboardApi } from './services/dashboardService';
+} from '../types';
+import { dashboardApi } from '../services/dashboardService';
 
 // ============ Context 类型定义 ============
 

@@ -26,8 +26,8 @@ import {
   Zap,
   BarChart3,
 } from "lucide-react";
-import { useDashboard } from "../DashboardContext";
-import AnimatedNumber from "./AnimatedNumber";
+import { useDashboard } from "../../contexts/DashboardContext";
+import AnimatedNumber from "../common/AnimatedNumber";
 
 const IconMap = { Leaf, Sun, BatteryCharging, Coins, Zap, BarChart3 };
 

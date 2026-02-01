@@ -1,147 +1,262 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>智慧能源综合管理平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Noto+Sans+SC:wght@400;700&family=Share+Tech+Mono&display=swap');
-        
-        :root {
-            --neon-cyan: #00f2ff;
-            --deep-bg: #010612;
-            --panel-bg: rgba(10, 25, 50, 0.85);
-        }
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Noto+Sans+SC:wght@400;700&family=Share+Tech+Mono&display=swap");
 
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--deep-bg);
-            color: #ffffff;
-            overflow: hidden;
-            font-family: 'Noto Sans SC', sans-serif;
-            background-image: 
-                radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.08) 0%, transparent 60%),
-                linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 50px 50px, 50px 50px;
-        }
+      :root {
+        --neon-cyan: #00f2ff;
+        --deep-bg: #010612;
+        --panel-bg: rgba(10, 25, 50, 0.85);
+      }
 
-        .font-tech { font-family: 'Share Tech Mono', monospace; }
-        .font-cyber { font-family: 'Orbitron', sans-serif; }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--deep-bg);
+        color: #ffffff;
+        overflow: hidden;
+        font-family: "Noto Sans SC", sans-serif;
+        background-image:
+          radial-gradient(
+            circle at 50% 50%,
+            rgba(0, 242, 255, 0.08) 0%,
+            transparent 60%
+          ),
+          linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
+        background-size:
+          100% 100%,
+          50px 50px,
+          50px 50px;
+      }
 
-        .glass-panel {
-            background: var(--panel-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 242, 255, 0.25);
-            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 242, 255, 0.1);
-        }
+      .font-tech {
+        font-family: "Share Tech Mono", monospace;
+      }
+      .font-cyber {
+        font-family: "Orbitron", sans-serif;
+      }
 
-        .value-highlight {
-            font-family: 'Orbitron', sans-serif;
-            background: linear-gradient(180deg, #fff 10%, #00f2ff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.8));
-        }
+      .glass-panel {
+        background: var(--panel-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 242, 255, 0.25);
+        box-shadow:
+          0 10px 40px 0 rgba(0, 0, 0, 0.8),
+          inset 0 0 15px rgba(0, 242, 255, 0.1);
+      }
 
-        .cyber-header-shape {
-            background: linear-gradient(180deg, rgba(0, 242, 255, 0.2) 0%, transparent 100%);
-            border-bottom: 2px solid var(--neon-cyan);
-            clip-path: polygon(0 0, 100% 0, 95% 100%, 85% 100%, 83% 85%, 17% 85%, 15% 100%, 5% 100%);
-        }
+      .value-highlight {
+        font-family: "Orbitron", sans-serif;
+        background: linear-gradient(180deg, #fff 10%, #00f2ff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.8));
+      }
 
-        /* 能量虚线流动 */
-        @keyframes dash {
-            to { stroke-dashoffset: -32; }
-        }
-        .energy-line {
-            animation: dash 2s linear infinite;
-        }
+      .cyber-header-shape {
+        background: linear-gradient(
+          180deg,
+          rgba(0, 242, 255, 0.2) 0%,
+          transparent 100%
+        );
+        border-bottom: 2px solid var(--neon-cyan);
+        clip-path: polygon(
+          0 0,
+          100% 0,
+          95% 100%,
+          85% 100%,
+          83% 85%,
+          17% 85%,
+          15% 100%,
+          5% 100%
+        );
+      }
 
-        /* 悬浮动画 */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-12px); }
+      /* 能量虚线流动 */
+      @keyframes dash {
+        to {
+          stroke-dashoffset: -32;
         }
-        .animate-float {
-            animation: float 5s ease-in-out infinite;
-        }
+      }
+      .energy-line {
+        animation: dash 2s linear infinite;
+      }
 
-        /* 报警背景斜纹动画 */
-        @keyframes alert-stripes {
-            from { background-position: 0 0; }
-            to { background-position: 40px 0; }
+      /* 悬浮动画 */
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
         }
-        .bg-hazard {
-            background-image: linear-gradient(45deg, rgba(239, 68, 68, 0.1) 25%, transparent 25%, transparent 50%, rgba(239, 68, 68, 0.1) 50%, rgba(239, 68, 68, 0.1) 75%, transparent 75%, transparent);
-            background-size: 20px 20px;
-            animation: alert-stripes 2s linear infinite;
+        50% {
+          transform: translateY(-12px);
         }
+      }
+      .animate-float {
+        animation: float 5s ease-in-out infinite;
+      }
 
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 2px; }
+      /* 报警背景斜纹动画 */
+      @keyframes alert-stripes {
+        from {
+          background-position: 0 0;
+        }
+        to {
+          background-position: 40px 0;
+        }
+      }
+      .bg-hazard {
+        background-image: linear-gradient(
+          45deg,
+          rgba(239, 68, 68, 0.1) 25%,
+          transparent 25%,
+          transparent 50%,
+          rgba(239, 68, 68, 0.1) 50%,
+          rgba(239, 68, 68, 0.1) 75%,
+          transparent 75%,
+          transparent
+        );
+        background-size: 20px 20px;
+        animation: alert-stripes 2s linear infinite;
+      }
 
-        /* 入场动画 */
-        @keyframes slideDown {
-            from { transform: translateY(-100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes slideRight {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideLeft {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes zoomIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--neon-cyan);
+        border-radius: 2px;
+      }
 
-        .animate-slide-down { animation: slideDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .animate-slide-up { animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .animate-slide-right { animation: slideRight 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .animate-slide-left { animation: slideLeft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .animate-zoom-in { animation: zoomIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .animate-fade-in { animation: fadeIn 1.5s ease-out forwards; }
-        
-        /* 延迟类 */
-        .delay-100 { animation-delay: 100ms; opacity: 0; animation-fill-mode: forwards; }
-        .delay-200 { animation-delay: 200ms; opacity: 0; animation-fill-mode: forwards; }
-        .delay-300 { animation-delay: 300ms; opacity: 0; animation-fill-mode: forwards; }
-        .delay-500 { animation-delay: 500ms; opacity: 0; animation-fill-mode: forwards; }
+      /* 入场动画 */
+      @keyframes slideDown {
+        from {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideRight {
+        from {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideLeft {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes zoomIn {
+        from {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .animate-slide-down {
+        animation: slideDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      .animate-slide-up {
+        animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      .animate-slide-right {
+        animation: slideRight 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      .animate-slide-left {
+        animation: slideLeft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      .animate-zoom-in {
+        animation: zoomIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      .animate-fade-in {
+        animation: fadeIn 1.5s ease-out forwards;
+      }
+
+      /* 延迟类 */
+      .delay-100 {
+        animation-delay: 100ms;
+        opacity: 0;
+        animation-fill-mode: forwards;
+      }
+      .delay-200 {
+        animation-delay: 200ms;
+        opacity: 0;
+        animation-fill-mode: forwards;
+      }
+      .delay-300 {
+        animation-delay: 300ms;
+        opacity: 0;
+        animation-fill-mode: forwards;
+      }
+      .delay-500 {
+        animation-delay: 500ms;
+        opacity: 0;
+        animation-fill-mode: forwards;
+      }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react-dom": "https://esm.sh/react-dom@18.3.1",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-    "lucide-react": "https://esm.sh/lucide-react@0.471.0?external=react",
-    "recharts": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
-    "three": "https://esm.sh/three@0.172.0",
-    "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.16.8?external=react,react-dom,three",
-    "@react-three/drei": "https://esm.sh/@react-three/drei@9.121.0?external=react,react-dom,three,@react-three/fiber"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
-<body>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.3.1",
+          "react-dom": "https://esm.sh/react-dom@18.3.1",
+          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+          "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+          "lucide-react": "https://esm.sh/lucide-react@0.471.0?external=react",
+          "recharts": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
+          "three": "https://esm.sh/three@0.172.0",
+          "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.16.8?external=react,react-dom,three",
+          "@react-three/drei": "https://esm.sh/@react-three/drei@9.121.0?external=react,react-dom,three,@react-three/fiber"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body>
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
 </html>
