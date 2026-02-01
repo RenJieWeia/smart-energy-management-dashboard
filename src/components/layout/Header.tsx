@@ -1,5 +1,6 @@
 import React from "react";
-import { ShieldCheck, Database, BellDot, Cpu, Network } from "lucide-react";
+import { ShieldCheck, Cpu, Network, Box } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useDashboard } from "../../contexts/DashboardContext";
 
 interface HeaderProps {
@@ -71,39 +72,19 @@ const Header: React.FC<HeaderProps> = ({ currentTime }) => {
       {/* 右侧控制面板 */}
       <div className="flex items-center space-x-6">
         <div className="flex space-x-8">
-          <div className="flex flex-col items-center group cursor-pointer">
-            <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 group-hover:bg-cyan-500/30 transition-all">
-              <Database size={20} className="text-cyan-300" />
+          <a 
+            href="http://demo.jingneng.site:81" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex flex-col items-center group cursor-pointer"
+          >
+            <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 group-hover:bg-indigo-500/30 transition-all">
+              <Box size={20} className="text-indigo-300" />
             </div>
             <span className="text-[11px] mt-1 text-slate-200 font-black uppercase tracking-tighter">
-              Database
+              3D
             </span>
-          </div>
-          <div className="relative flex flex-col items-center group cursor-pointer">
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 group-hover:bg-amber-500/30 transition-all">
-              <BellDot size={20} className="text-amber-400 animate-pulse" />
-            </div>
-            <span className="text-[11px] mt-1 text-slate-200 font-black uppercase tracking-tighter">
-              Alerts
-            </span>
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-[#010612] animate-bounce"></span>
-          </div>
-        </div>
-
-        <div className="h-12 w-[1px] bg-white/20 mx-4"></div>
-
-        <div className="flex items-center space-x-3 bg-white/10 border border-white/20 pl-1 pr-5 py-1.5 rounded-full backdrop-blur-md">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-[#010612] font-black shadow-lg">
-            AD
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-black text-white leading-none">
-              ADMIN.ROOT
-            </span>
-            <span className="text-[10px] text-emerald-400 font-black tracking-widest mt-0.5">
-              ONLINE
-            </span>
-          </div>
+          </a>
         </div>
       </div>
     </div>

@@ -9,3 +9,4 @@ export { PressureChart } from './PressureChart';
 export { DeviceStatusList } from './DeviceStatusList';
 export { EnergyMeterChart } from './EnergyMeterChart';
 export { FlowMeterChart } from './FlowMeterChart';
+export { EnergyHeatMeterChart } from './EnergyHeatMeterChart';

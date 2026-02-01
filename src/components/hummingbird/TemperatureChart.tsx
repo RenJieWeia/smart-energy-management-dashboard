@@ -98,6 +98,7 @@ export const TemperatureChart: React.FC = () => {
               }}
               labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '11px' }}
               itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+              formatter={(value: number) => [`${value.toFixed(2)} °C`]}
             />
             <Legend 
               verticalAlign="top" 
