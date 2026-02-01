@@ -15,7 +15,8 @@ import { useDashboard } from "../../contexts/DashboardContext";
 import AnimatedNumber from "../common/AnimatedNumber";
 
 const BottomRow: React.FC = () => {
-  const { monthlyCarbonTrend, renewableSubstitutionData, bottomStats } = useDashboard();
+  const { monthlyCarbonTrend, renewableSubstitutionData, bottomStats } =
+    useDashboard();
   return (
     <div className="flex h-full space-x-8">
       {/* 月度碳中和足迹 */}
