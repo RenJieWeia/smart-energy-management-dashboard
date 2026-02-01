@@ -28,7 +28,7 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   const [displayNumber, setDisplayNumber] = useState(targetNumber);
   const startNumberRef = useRef(targetNumber);
   const startTimeRef = useRef<number | null>(null);
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     startNumberRef.current = displayNumber;
