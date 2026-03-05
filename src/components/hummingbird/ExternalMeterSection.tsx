@@ -42,50 +42,44 @@ interface DeviceMeterCardProps {
 const DeviceMeterCard: React.FC<DeviceMeterCardProps> = ({ deviceId, label }) => {
   const { deviceData, loading } = useHummingBirdApi(deviceId, POLLING_INTERVAL);
 
-  const numericProperties = useMemo(() =>
-    deviceData
-      .map(d => ({ code: d.code, name: d.name, value: Number(d.value) || 0, unit: d.unit }))
-      .filter(d => typeof d.value === 'number' && !isNaN(d.value)),
-    [deviceData]
-  );
+  const powerData = useMemo(() => {
+    const numeric = deviceData.map(d => ({ ...d, num: Number(d.value) || 0 }));
+    return numeric.find(d => /power/i.test(d.code) || /功率/.test(d.name)) || numeric[0];
+  }, [deviceData]);
 
   return (
-    <div className="flex flex-col items-stretch p-2 rounded border bg-slate-800/30 border-slate-700/30 hover:border-yellow-500/30 transition-all h-full overflow-hidden">
+    <div className="flex flex-col p-2.5 rounded border bg-slate-800/40 border-slate-700/50 hover:border-yellow-500/50 transition-all h-full justify-between relative overflow-hidden group">
+      {/* 装饰光晕 */}
+      <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/5 rounded-full blur-xl -mr-8 -mt-8 pointer-events-none group-hover:bg-yellow-500/10 transition-colors"></div>
+      
       {/* 设备标题 */}
-      <div className="flex items-center gap-1 mb-1.5 shrink-0">
-        <Zap size={10} className="text-yellow-400 shrink-0" />
-        <span className="text-[11px] font-bold text-slate-300 truncate">{label}</span>
-        <span className="text-[9px] text-slate-600 ml-auto shrink-0">{deviceId}</span>
+      <div className="flex items-center gap-1.5 shrink-0 z-10 relative">
+        <Zap size={12} className="text-yellow-400 shrink-0" />
+        <span className="text-xs font-bold text-slate-200 truncate">{label}</span>
       </div>
 
-      {loading && deviceData.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-3 h-3 border border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-        </div>
-      ) : numericProperties.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-[10px] text-slate-600">暂无数据</span>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0.5 min-h-0">
-          {numericProperties.map(prop => (
-            <div
-              key={prop.code}
-              className="flex items-center justify-between text-[10px] px-1 py-0.5 rounded hover:bg-slate-700/30"
-            >
-              <span className="text-slate-500 truncate max-w-[55%]" title={prop.name || prop.code}>
-                {prop.name || prop.code}
-              </span>
-              <span className="font-tech text-yellow-400 shrink-0 ml-1">
-                {prop.value.toFixed(prop.value % 1 === 0 ? 0 : 2)}
-                {prop.unit && prop.unit !== '-' && (
-                  <span className="text-slate-600 ml-0.5">{prop.unit}</span>
-                )}
-              </span>
+      <div className="flex-1 flex flex-col justify-end mt-2 z-10 relative">
+        {loading && deviceData.length === 0 ? (
+          <div className="w-4 h-4 border border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin self-center my-auto" />
+        ) : !powerData ? (
+          <span className="text-xs text-slate-600 self-center my-auto">暂无数据</span>
+        ) : (
+          <>
+            <div className="text-[10px] text-slate-500 mb-0.5 flex justify-between items-end">
+              <span>瞬时功率</span>
+              <span className="text-[9px] text-slate-600 font-tech">{deviceId}</span>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold font-tech text-yellow-400 leading-none tracking-tight">
+                {powerData.num.toFixed(powerData.num % 1 === 0 ? 0 : 2)}
+              </span>
+              {(powerData.unit && powerData.unit !== '-') && (
+                <span className="text-xs text-slate-500 ml-0.5">{powerData.unit}</span>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
