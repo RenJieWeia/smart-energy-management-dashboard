@@ -54,7 +54,7 @@ export const EnergyMeterChart: React.FC = () => {
   const { deviceData, loading } = useHummingBirdApi();
 
   const chartData = useMemo(() => {
-    const dataMap = new Map(deviceData.map(d => [d.code, d.value as number]));
+    const dataMap = new Map(deviceData.map(d => [d.code, Number(d.value) || 0]));
     
     return POWER_METERS.map(meter => ({
       name: meter.label,

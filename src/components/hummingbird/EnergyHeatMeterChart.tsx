@@ -5,7 +5,8 @@
 
 import React, { useMemo } from 'react';
 import { useHummingBirdApi } from '@/hooks';
-import { Zap, Flame, Gauge } from 'lucide-react';
+import { Flame, Gauge, Zap } from 'lucide-react';
+import { ExternalMeterSection, useExternalMetersTotalPower } from './ExternalMeterSection';
 
 /** 电能表配置 */
 const ELECTRICITY_METERS = [
@@ -38,7 +39,7 @@ export const EnergyHeatMeterChart: React.FC = () => {
   const { deviceData, loading } = useHummingBirdApi();
 
   const dataMap = useMemo(() => 
-    new Map(deviceData.map(d => [d.code, d.value as number])),
+    new Map(deviceData.map(d => [d.code, Number(d.value) || 0])),
     [deviceData]
   );
 
@@ -60,10 +61,7 @@ export const EnergyHeatMeterChart: React.FC = () => {
     [dataMap]
   );
 
-  const totalPower = useMemo(() => 
-    electricityData.reduce((sum, item) => sum + item.power, 0),
-    [electricityData]
-  );
+  const totalPower = useExternalMetersTotalPower();
 
   const systemCOP = dataMap.get('systemICOP') || 0;
 
@@ -102,33 +100,8 @@ export const EnergyHeatMeterChart: React.FC = () => {
         </div>
       </div>
 
-      {/* 电能表瞬时功率 */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-1 px-1 flex items-center gap-1.5 shrink-0">
-          <Zap size={12} className="text-yellow-500" />
-          电能表瞬时功率
-        </div>
-        <div className="grid grid-cols-3 gap-2 flex-1">
-          {electricityData.map(item => (
-            <div 
-              key={item.code}
-              className="flex flex-col items-center justify-center p-2 rounded border bg-slate-800/30 border-slate-700/30 hover:border-yellow-500/30 transition-all h-full"
-            >
-              <span className="text-[11px] text-slate-400 mb-1">{item.short}</span>
-              <div className="flex items-baseline gap-0.5 mb-1">
-                <span className="text-xl font-bold font-tech text-yellow-400 leading-none">
-                  {item.power.toFixed(1)}
-                </span>
-                <span className="text-[10px] text-slate-600 font-medium">kW</span>
-              </div>
-              {/* 累计电能 */}
-              <div className="text-[10px] text-slate-500 bg-slate-900/40 px-2 py-0.5 rounded-full">
-                <span className="font-tech text-slate-400">{item.energy.toFixed(0)}</span> kW·h
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* 电能表瞬时功率 - 三台独立电表 */}
+      <ExternalMeterSection />
 
       {/* 热量表数据 */}
       <div className="flex-1 flex flex-col min-h-0">

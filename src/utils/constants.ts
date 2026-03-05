@@ -10,7 +10,7 @@ import type {
 } from '@/types/hummingbird';
 
 /** 默认设备ID */
-export const DEFAULT_DEVICE_ID = '74835337';
+export const DEFAULT_DEVICE_ID = '42222843';
 
 /** 轮询间隔时间（毫秒） */
 export const POLLING_INTERVAL = 5000;

@@ -42,7 +42,7 @@ export const PressureChart: React.FC = () => {
   const chartData = useMemo(() => {
     if (deviceData.length === 0) return [];
 
-    const dataMap = new Map(deviceData.map(d => [d.code, d.value as number]));
+    const dataMap = new Map(deviceData.map(d => [d.code, Number(d.value) || 0]));
 
     return PRESSURE_CONFIG.map(config => ({
       name: config.label,

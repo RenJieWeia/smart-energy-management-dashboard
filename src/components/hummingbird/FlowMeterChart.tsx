@@ -39,7 +39,7 @@ export const FlowMeterChart: React.FC = () => {
   const { deviceData, loading } = useHummingBirdApi();
 
   const chartData = useMemo(() => {
-    const dataMap = new Map(deviceData.map(d => [d.code, d.value as number]));
+    const dataMap = new Map(deviceData.map(d => [d.code, Number(d.value) || 0]));
     
     return FLOW_METERS.map(meter => ({
       name: meter.label,
