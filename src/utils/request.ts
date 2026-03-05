@@ -13,8 +13,7 @@ import type { LoginResponse } from '@/types/hummingbird';
 
 // API 基础配置
 const API_CONFIG = {
-  baseURL: 'http://api.jingneng.site:81',
-  // baseURL: 'http://192.168.1.253:58081',
+  baseURL: '/api/v1/',
   timeout: 5000,
   headers: {
     'Content-Type': 'application/json'
@@ -123,7 +122,7 @@ export async function login(
   try {
     // 使用没有拦截器的实例进行登录，避免循环调用
     const response = await loginInstance.post<LoginResponse>(
-      '/v1.0/openapi/auth/login',
+      'auth/login',
       { username, password }
     );
 

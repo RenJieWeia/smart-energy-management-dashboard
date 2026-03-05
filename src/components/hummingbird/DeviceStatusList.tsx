@@ -113,7 +113,7 @@ export const DeviceStatusList: React.FC = () => {
   const { deviceData, loading } = useHummingBirdApi();
 
   const dataMap = useMemo(() => 
-    new Map(deviceData.map(d => [d.code, d.value as number])),
+    new Map(deviceData.map(d => [d.code, Number(d.value) || 0])),
     [deviceData]
   );
 

@@ -87,3 +87,22 @@ export interface SwitchListItem {
 export interface StatusItemResult {
   [key: string]: Array<StatusMaskItem & { value: string }>;
 }
+
+/** 设备详细信息 */
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  productId?: string;
+  productName?: string;
+  status?: string | number;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+/** 设备详细信息响应 */
+export interface DeviceInfoResponse {
+  code: number;
+  message: string;
+  result: DeviceInfo;
+}

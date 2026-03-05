@@ -32,7 +32,7 @@ export const TemperatureChart: React.FC = () => {
   const { chartData, outsideTemp } = useMemo(() => {
     if (deviceData.length === 0) return { chartData: [], outsideTemp: 0 };
 
-    const dataMap = new Map(deviceData.map(d => [d.code, d.value as number]));
+    const dataMap = new Map(deviceData.map(d => [d.code, Number(d.value) || 0]));
 
     const chartData = TEMP_GROUPS.map(group => ({
       name: group.label,

@@ -3,8 +3,153 @@
  * 用于验证 API 连接和数据获取
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useHummingBirdApi } from '@/hooks';
+import { getDeviceInfo } from '@/sdk/hbsdk';
+import type { DeviceInfo } from '@/types/hummingbird';
+
+const EXTRA_DEVICES = [
+  { id: '62415514', label: '设备 62415514' },
+  { id: '47862598', label: '设备 47862598' },
+  { id: '28022392', label: '设备 28022392' },
+];
+
+function DeviceDataPanel({ deviceId, label }: { deviceId: string; label: string }) {
+  const { loading, error, deviceData, refresh } = useHummingBirdApi(deviceId, 0);
+  const [expanded, setExpanded] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
+  const [infoLoading, setInfoLoading] = useState(true);
+  const [infoError, setInfoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setInfoLoading(true);
+    getDeviceInfo(deviceId)
+      .then(res => {
+        setDeviceInfo(res.result);
+        setInfoError(null);
+      })
+      .catch(err => {
+        setInfoError(err instanceof Error ? err.message : '获取设备信息失败');
+      })
+      .finally(() => setInfoLoading(false));
+  }, [deviceId]);
+
+  return (
+    <section style={{
+      marginBottom: '24px',
+      padding: '16px',
+      backgroundColor: '#1e293b',
+      borderRadius: '8px',
+      border: '1px solid #334155',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <h3 style={{ color: '#38bdf8', margin: 0 }}>📡 {label}</h3>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={refresh}
+            disabled={loading}
+            style={{
+              padding: '4px 14px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              backgroundColor: '#0ea5e9',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '12px',
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            🔄 刷新
+          </button>
+          <button
+            onClick={() => setExpanded(v => !v)}
+            style={{
+              padding: '4px 14px',
+              cursor: 'pointer',
+              backgroundColor: expanded ? '#dc2626' : '#475569',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '12px',
+            }}
+          >
+            {expanded ? '收起' : '展开原始数据'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '8px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+        <span style={{ color: '#94a3b8' }}>
+          状态: <strong style={{ color: loading ? '#fbbf24' : '#4ade80' }}>{loading ? '加载中...' : '✓ 已加载'}</strong>
+        </span>
+        <span style={{ color: '#94a3b8' }}>
+          数据条数: <strong style={{ color: '#22d3ee' }}>{deviceData.length}</strong>
+        </span>
+        {error && (
+          <span style={{ color: '#f87171' }}>错误: {error.message}</span>
+        )}
+      </div>
+
+      {/* 设备详细信息 */}
+      <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#0f172a', borderRadius: '6px', border: '1px solid #1e3a5f' }}>
+        <div style={{ color: '#38bdf8', fontWeight: 'bold', marginBottom: '8px', fontSize: '13px' }}>🔍 设备基本信息</div>
+        {infoLoading && <span style={{ color: '#fbbf24', fontSize: '12px' }}>加载中...</span>}
+        {infoError && <span style={{ color: '#f87171', fontSize: '12px' }}>错误: {infoError}</span>}
+        {deviceInfo && !infoLoading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '6px' }}>
+            {Object.entries(deviceInfo).map(([key, val]) => (
+              <div key={key} style={{ fontSize: '12px' }}>
+                <span style={{ color: '#64748b' }}>{key}: </span>
+                <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>
+                  {val === null || val === undefined ? '-' : typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 属性表格 */}
+      {deviceData.length > 0 && (
+        <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: expanded ? '12px' : 0 }}>
+          <thead>
+            <tr style={{ background: '#0f172a' }}>
+              <th style={{ border: '1px solid #334155', padding: '8px', color: '#22d3ee', textAlign: 'left' }}>属性代码</th>
+              <th style={{ border: '1px solid #334155', padding: '8px', color: '#22d3ee', textAlign: 'left' }}>属性名称</th>
+              <th style={{ border: '1px solid #334155', padding: '8px', color: '#22d3ee', textAlign: 'left' }}>值</th>
+              <th style={{ border: '1px solid #334155', padding: '8px', color: '#22d3ee', textAlign: 'left' }}>单位</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deviceData.map((item, i) => (
+              <tr key={item.code ?? i} style={{ background: i % 2 === 0 ? '#1e293b' : '#0f172a' }}>
+                <td style={{ border: '1px solid #334155', padding: '8px', color: '#94a3b8', fontFamily: 'monospace', fontSize: '12px' }}>{item.code}</td>
+                <td style={{ border: '1px solid #334155', padding: '8px', color: '#e2e8f0' }}>{item.name ?? '-'}</td>
+                <td style={{ border: '1px solid #334155', padding: '8px', color: '#4ade80', fontFamily: 'monospace' }}>{String(item.value)}</td>
+                <td style={{ border: '1px solid #334155', padding: '8px', color: '#94a3b8' }}>{item.unit ?? '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {expanded && (
+        <pre style={{
+          background: '#0f172a',
+          padding: '12px',
+          overflow: 'auto',
+          maxHeight: '300px',
+          fontSize: '12px',
+          borderRadius: '6px',
+          color: '#a5f3fc',
+          border: '1px solid #334155',
+        }}>
+          {JSON.stringify(deviceData, null, 2)}
+        </pre>
+      )}
+    </section>
+  );
+}
 
 export function HummingBirdApiTest() {
   const {
@@ -232,6 +377,14 @@ export function HummingBirdApiTest() {
           </pre>
         )}
       </section>
+
+      {/* 其他设备数据 */}
+      <h2 style={{ color: '#22d3ee', margin: '32px 0 16px', fontSize: '20px' }}>
+        📦 其他设备数据
+      </h2>
+      {EXTRA_DEVICES.map(dev => (
+        <DeviceDataPanel key={dev.id} deviceId={dev.id} label={dev.label} />
+      ))}
     </div>
   );
 }

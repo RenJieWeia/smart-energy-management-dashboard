@@ -1,5 +1,15 @@
 :80 {
-    root * /usr/share/caddy
-    file_server
-    try_files {path} /index.html
+    # 蜂鸟物联平台 API 反向代理（解决跨域）
+    handle /api/v1/* {
+        reverse_proxy hb.jingneng.site:81 {
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    # 前端静态文件
+    handle {
+        root * /usr/share/caddy
+        file_server
+        try_files {path} /index.html
+    }
 }

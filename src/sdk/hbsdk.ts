@@ -5,7 +5,7 @@
 
 import { hummingbirdInstance } from '@/utils/request';
 import { DEFAULT_DEVICE_ID } from '@/utils/constants';
-import type { DeviceDataResponse, DeviceControlResponse } from '@/types/hummingbird';
+import type { DeviceDataResponse, DeviceControlResponse, DeviceInfoResponse } from '@/types/hummingbird';
 
 /** 设备数据查询参数 */
 export interface DeviceDataParams {
@@ -50,7 +50,7 @@ export async function getDeviceLastData(
   }).toString();
 
   return hummingbirdInstance.get(
-    `/api/v1/device/${deviceId}/thing-model/property?${queryString}`
+    `/device/${deviceId}/thing-model/property?${queryString}`
   );
 }
 
@@ -64,7 +64,7 @@ export async function updateDevice(
   deviceId: string = DEFAULT_DEVICE_ID,
   params: DeviceControlParams
 ): Promise<DeviceControlResponse> {
-  return hummingbirdInstance.post('/api/v1/device/control', {
+  return hummingbirdInstance.post('device/control', {
     deviceId,
     data: { ...params }
   });
@@ -84,6 +84,17 @@ export async function getDeviceHistoryData(
     `/api/v1/device/${deviceId}/thing-model/history`,
     { params }
   );
+}
+
+/**
+ * 获取设备详细信息
+ * @param deviceId - 设备ID
+ * @returns 设备详细信息响应
+ */
+export async function getDeviceInfo(
+  deviceId: string = DEFAULT_DEVICE_ID
+): Promise<DeviceInfoResponse> {
+  return hummingbirdInstance.get(`/device/${deviceId}`);
 }
 
 /**
