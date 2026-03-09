@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { useHummingBirdApi } from '@/hooks';
 import { Flame, Gauge, Zap } from 'lucide-react';
 import { ExternalMeterSection, useExternalMetersTotalPower } from './ExternalMeterSection';
+import AnimatedNumber from '../common/AnimatedNumber';
 
 /** 电能表配置 */
 const ELECTRICITY_METERS = [
@@ -93,8 +94,8 @@ export const EnergyHeatMeterChart: React.FC = () => {
         <div className="flex-1 flex flex-col justify-center px-2 rounded bg-yellow-900/10 border border-yellow-500/20 relative group overflow-hidden">
           <div className="text-[10px] text-yellow-300/80 font-medium mb-1 truncate" title="三表正向用功总电能">三表总电能 (A)</div>
           <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold font-tech text-yellow-400 leading-none">
-              {threeMetersTotalEnergy.toFixed(1)}
+            <span className="text-xl font-bold font-tech text-yellow-400 leading-none inline-block min-w-0">
+              <AnimatedNumber value={threeMetersTotalEnergy} decimals={1} />
             </span>
             <span className="text-[9px] text-yellow-500/70">kWh</span>
           </div>
@@ -106,8 +107,8 @@ export const EnergyHeatMeterChart: React.FC = () => {
         <div className="flex-1 flex flex-col justify-center px-2 rounded bg-cyan-900/10 border border-cyan-500/20 relative group overflow-hidden">
           <div className="text-[10px] text-cyan-300/80 font-medium mb-1 truncate" title="冷东侧热量表累计热量">累计热量 (B)</div>
           <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold font-tech text-cyan-400 leading-none">
-              {cumulativeHeat.toFixed(1)}
+            <span className="text-xl font-bold font-tech text-cyan-400 leading-none inline-block min-w-0">
+              <AnimatedNumber value={cumulativeHeat} decimals={1} />
             </span>
             <span className="text-[9px] text-cyan-500/70">kWh</span>
           </div>
@@ -121,8 +122,8 @@ export const EnergyHeatMeterChart: React.FC = () => {
             <Gauge size={10} /> COP (A/B)
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold font-tech text-emerald-400 leading-none">
-              {systemCOP.toFixed(2)}
+            <span className="text-2xl font-bold font-tech text-emerald-400 leading-none inline-block min-w-0">
+              <AnimatedNumber value={systemCOP} decimals={2} />
             </span>
           </div>
         </div>
@@ -151,8 +152,8 @@ export const EnergyHeatMeterChart: React.FC = () => {
                 <div>
                   <div className="text-[10px] text-slate-500 mb-0.5">瞬时热量</div>
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-xl font-bold font-tech ${item.color} leading-none`}>
-                      {item.heat.toFixed(1)}
+                    <span className={`text-xl font-bold font-tech ${item.color} leading-none inline-block min-w-0`}>
+                      <AnimatedNumber value={item.heat} decimals={1} />
                     </span>
                     <span className="text-[10px] text-slate-600">kW</span>
                   </div>
@@ -160,8 +161,8 @@ export const EnergyHeatMeterChart: React.FC = () => {
                 <div className="text-right">
                   <div className="text-[10px] text-slate-500 mb-0.5">瞬时流量</div>
                   <div className="flex items-baseline gap-1 justify-end">
-                    <span className={`text-xl font-bold font-tech ${item.color} leading-none`}>
-                      {item.flow.toFixed(1)}
+                    <span className={`text-xl font-bold font-tech ${item.color} leading-none inline-block min-w-0`}>
+                      <AnimatedNumber value={item.flow} decimals={1} />
                     </span>
                     <span className="text-[10px] text-slate-600">m³/h</span>
                   </div>
