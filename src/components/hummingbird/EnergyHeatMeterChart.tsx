@@ -6,7 +6,7 @@
 import React, { useMemo } from 'react';
 import { useHummingBirdApi } from '@/hooks';
 import { Flame, Gauge, Zap } from 'lucide-react';
-import { ExternalMeterSection } from './ExternalMeterSection';
+import { ExternalMeterSection, useExternalMetersTotalPower } from './ExternalMeterSection';
 
 /** 电能表配置 */
 const ELECTRICITY_METERS = [
@@ -71,38 +71,11 @@ export const EnergyHeatMeterChart: React.FC = () => {
     return Number(prop?.value) || 0;
   }, [deviceData]);
 
-  // 为了健壮性容错，如果 crCode 拿不到数据，尝试通过前缀名称或者包含"电能"等字段动态查找对应的累计值
-  const internalTotalEnergy = useMemo(() => {
-    let sum = 0;
-    ELECTRICITY_METERS.forEach(meter => {
-      // 优先取 crCode 定义的字段
-      let energy = dataMap.get(meter.crCode);
-      if (typeof energy !== 'number' || isNaN(energy) || energy === 0) {
-        // 如果为0或找不到，通过名称做进一步推断(设备上报的字段可能带中文或变化)
-        const matchedProp = deviceData.find(d => 
-          d.code === meter.crCode || 
-          (d.name?.includes(meter.short) && (d.name?.includes('电能') || d.name?.includes('功率') || d.name?.includes('正向'))) ||
-          d.code.toLowerCase().includes(meter.short.toLowerCase())
-        );
-        if (matchedProp) energy = Number(matchedProp.value) || 0;
-      }
-      sum += (energy || 0);
-    });
-
-    // Fallback: 如果还是计算不出来，可能是真实名称未带前缀。从所有带有"正向有功总电能" 或 "电能" 的字段里汇总
-    if (sum === 0 && deviceData.length > 0) {
-       const energyProps = deviceData.filter(d => /正向.*用功总电能|正向.*有功总电能/.test(d.name) || /电能/.test(d.name));
-       // 从主控数据源去匹配前三个电能数据（对应那三块电表）
-       if (energyProps.length > 0) {
-          sum = energyProps.slice(0, 3).reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
-       }
-    }
-
-    return sum;
-  }, [dataMap, deviceData]);
+  // 从外部独立三表拿正向用功总电能加和
+  const threeMetersTotalEnergy = useExternalMetersTotalPower();
 
   // calculation: 三块电表的用能综合 / 冷东侧热量表累计热量 (用户公式)
-  const systemCOP = cumulativeHeat > 0 ? (internalTotalEnergy / cumulativeHeat) : 0;
+  const systemCOP = cumulativeHeat > 0 ? (threeMetersTotalEnergy / cumulativeHeat) : 0;
 
   if (loading && deviceData.length === 0) {
     return (
@@ -118,10 +91,10 @@ export const EnergyHeatMeterChart: React.FC = () => {
       <div className="flex gap-1 shrink-0 h-[14%] items-stretch">
         {/* 指标 A：总电能 */}
         <div className="flex-1 flex flex-col justify-center px-2 rounded bg-yellow-900/10 border border-yellow-500/20 relative group overflow-hidden">
-          <div className="text-[10px] text-yellow-300/80 font-medium mb-1">主控总电能 (A)</div>
+          <div className="text-[10px] text-yellow-300/80 font-medium mb-1 truncate" title="三表正向用功总电能">三表总电能 (A)</div>
           <div className="flex items-baseline gap-1">
             <span className="text-xl font-bold font-tech text-yellow-400 leading-none">
-              {internalTotalEnergy.toFixed(1)}
+              {threeMetersTotalEnergy.toFixed(1)}
             </span>
             <span className="text-[9px] text-yellow-500/70">kWh</span>
           </div>

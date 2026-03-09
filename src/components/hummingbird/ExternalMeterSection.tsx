@@ -3,8 +3,9 @@
  * 展示三台独立电表设备（62415514、47862598、28022392）的实时数据
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useHummingBirdApi } from '@/hooks';
+import { getDeviceInfo } from '@/sdk/hbsdk';
 import { POLLING_INTERVAL } from '@/utils/constants';
 import { Zap } from 'lucide-react';
 
@@ -14,22 +15,22 @@ const EXTERNAL_METERS = [
   { id: '28022392', label: '3#电表' },
 ];
 
-/** 从设备属性列表中提取功率值：优先匹配含 power 的属性，fallback 取第一个数值属性 */
-function extractPower(deviceData: Array<{ code: string; name: string; value: number | string; unit: string }>): number {
+/** 从设备属性列表中提取正向有功总电能 */
+function extractEnergy(deviceData: Array<{ code: string; name: string; value: number | string; unit: string }>): number {
   const numeric = deviceData.map(d => ({ ...d, num: Number(d.value) || 0 }));
-  const powerProp = numeric.find(d => /power/i.test(d.code) || /功率/.test(d.name));
-  if (powerProp) return powerProp.num;
-  return numeric[0]?.num ?? 0;
+  const energyProp = numeric.find(d => /正向.*用功总电能|正向.*有功总电能/.test(d.name) || /电能/.test(d.name));
+  if (energyProp) return energyProp.num;
+  return numeric.find(d => /power/i.test(d.code) || /功率/.test(d.name))?.num ?? numeric[0]?.num ?? 0;
 }
 
-/** 获取三台外部电表总功率 */
+/** 获取三台外部电表总电能/总功率（向后兼容） */
 export function useExternalMetersTotalPower(): number {
   const { deviceData: d1 } = useHummingBirdApi(EXTERNAL_METERS[0].id, POLLING_INTERVAL);
   const { deviceData: d2 } = useHummingBirdApi(EXTERNAL_METERS[1].id, POLLING_INTERVAL);
   const { deviceData: d3 } = useHummingBirdApi(EXTERNAL_METERS[2].id, POLLING_INTERVAL);
 
   return useMemo(
-    () => extractPower(d1) + extractPower(d2) + extractPower(d3),
+    () => extractEnergy(d1) + extractEnergy(d2) + extractEnergy(d3),
     [d1, d2, d3]
   );
 }
@@ -41,10 +42,29 @@ interface DeviceMeterCardProps {
 
 const DeviceMeterCard: React.FC<DeviceMeterCardProps> = ({ deviceId, label }) => {
   const { deviceData, loading } = useHummingBirdApi(deviceId, POLLING_INTERVAL);
+  const [realName, setRealName] = useState(label);
+
+  // 动态获取设备的真实名称
+  useEffect(() => {
+    let mounted = true;
+    getDeviceInfo(deviceId)
+      .then(res => {
+        if (mounted && res?.result?.name) {
+          setRealName(res.result.name);
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to fetch device info for', deviceId, err);
+      });
+    return () => { mounted = false; };
+  }, [deviceId]);
 
   const powerData = useMemo(() => {
     const numeric = deviceData.map(d => ({ ...d, num: Number(d.value) || 0 }));
-    return numeric.find(d => /power/i.test(d.code) || /功率/.test(d.name)) || numeric[0];
+    // 优先匹配 正向用功总电能 或 正向有功总电能
+    return numeric.find(d => /正向.*用功.*电能|正向.*有功.*电能/.test(d.name)) 
+        || numeric.find(d => /电能/.test(d.name)) 
+        || numeric[0];
   }, [deviceData]);
 
   return (
@@ -55,7 +75,7 @@ const DeviceMeterCard: React.FC<DeviceMeterCardProps> = ({ deviceId, label }) =>
       {/* 设备标题 */}
       <div className="flex items-center gap-1.5 shrink-0 z-10 relative">
         <Zap size={12} className="text-yellow-400 shrink-0" />
-        <span className="text-xs font-bold text-slate-200 truncate">{label}</span>
+        <span className="text-xs font-bold text-slate-200 truncate" title={realName}>{realName}</span>
       </div>
 
       <div className="flex-1 flex flex-col justify-end mt-2 z-10 relative">
@@ -66,8 +86,10 @@ const DeviceMeterCard: React.FC<DeviceMeterCardProps> = ({ deviceId, label }) =>
         ) : (
           <>
             <div className="text-[10px] text-slate-500 mb-0.5 flex justify-between items-end">
-              <span>瞬时功率</span>
-              <span className="text-[9px] text-slate-600 font-tech">{deviceId}</span>
+              <span className="truncate mr-1" title={powerData.name || '正向有功总电能'}>
+                {powerData.name || '正向有功总电能'}
+              </span>
+              <span className="text-[9px] text-slate-600 font-tech shrink-0">{deviceId}</span>
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold font-tech text-yellow-400 leading-none tracking-tight">
@@ -89,7 +111,7 @@ export const ExternalMeterSection: React.FC = () => {
     <div className="flex-1 flex flex-col min-h-0">
       <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-1 px-1 flex items-center gap-1.5 shrink-0">
         <Zap size={12} className="text-yellow-500" />
-        电能表瞬时功率
+        电能表数据
       </div>
       <div className="grid grid-cols-3 gap-2 flex-1 min-h-0">
         {EXTERNAL_METERS.map(meter => (
