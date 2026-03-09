@@ -79,11 +79,25 @@ export const EnergyHeatMeterChart: React.FC = () => {
       let energy = dataMap.get(meter.crCode);
       if (typeof energy !== 'number' || isNaN(energy) || energy === 0) {
         // 如果为0或找不到，通过名称做进一步推断(设备上报的字段可能带中文或变化)
-        const matchedProp = deviceData.find(d => d.code === meter.crCode || (d.name?.includes(meter.short) && d.name?.includes('电能')));
+        const matchedProp = deviceData.find(d => 
+          d.code === meter.crCode || 
+          (d.name?.includes(meter.short) && (d.name?.includes('电能') || d.name?.includes('功率') || d.name?.includes('正向'))) ||
+          d.code.toLowerCase().includes(meter.short.toLowerCase())
+        );
         if (matchedProp) energy = Number(matchedProp.value) || 0;
       }
       sum += (energy || 0);
     });
+
+    // Fallback: 如果还是计算不出来，可能是真实名称未带前缀。从所有带有"正向有功总电能" 或 "电能" 的字段里汇总
+    if (sum === 0 && deviceData.length > 0) {
+       const energyProps = deviceData.filter(d => /正向.*用功总电能|正向.*有功总电能/.test(d.name) || /电能/.test(d.name));
+       // 从主控数据源去匹配前三个电能数据（对应那三块电表）
+       if (energyProps.length > 0) {
+          sum = energyProps.slice(0, 3).reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
+       }
+    }
+
     return sum;
   }, [dataMap, deviceData]);
 
