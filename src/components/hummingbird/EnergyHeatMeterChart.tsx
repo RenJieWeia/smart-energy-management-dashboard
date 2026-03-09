@@ -6,7 +6,7 @@
 import React, { useMemo } from 'react';
 import { useHummingBirdApi } from '@/hooks';
 import { Flame, Gauge, Zap } from 'lucide-react';
-import { ExternalMeterSection, useExternalMetersTotalPower } from './ExternalMeterSection';
+import { ExternalMeterSection } from './ExternalMeterSection';
 
 /** 电能表配置 */
 const ELECTRICITY_METERS = [
@@ -61,7 +61,11 @@ export const EnergyHeatMeterChart: React.FC = () => {
     [dataMap]
   );
 
-  const totalPower = useExternalMetersTotalPower();
+  // 自控柜下的三块电表（1#热泵、2#热泵、水泵）的用能总和
+  const internalTotalEnergy = useMemo(() => 
+    electricityData.reduce((sum, meter) => sum + meter.energy, 0),
+    [electricityData]
+  );
 
   // 获取冷冻/冷东侧热量表累计热量
   const cumulativeHeat = useMemo(() => {
@@ -74,7 +78,7 @@ export const EnergyHeatMeterChart: React.FC = () => {
   }, [deviceData]);
 
   // calculation: 三块电表的用能综合 / 冷东侧热量表累计热量 (用户公式)
-  const systemCOP = cumulativeHeat > 0 ? (totalPower / cumulativeHeat) : 0;
+  const systemCOP = cumulativeHeat > 0 ? (internalTotalEnergy / cumulativeHeat) : 0;
 
   if (loading && deviceData.length === 0) {
     return (
@@ -86,7 +90,7 @@ export const EnergyHeatMeterChart: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col gap-2">
-      {/* 系统COP & 总功率 */}
+      {/* 系统COP & 总能耗(内部三块电表和) */}
       <div className="flex gap-2 shrink-0 h-[14%]">
         <div className="flex-1 flex items-center justify-between px-3 rounded bg-emerald-900/10 border border-emerald-500/20">
           <div className="flex items-center gap-2">
@@ -104,7 +108,7 @@ export const EnergyHeatMeterChart: React.FC = () => {
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-bold font-tech text-yellow-400 leading-none">
-              {totalPower.toFixed(1)}
+              {internalTotalEnergy.toFixed(1)}
             </span>
             <span className="text-[10px] text-yellow-500/70 font-medium">kWh</span>
           </div>
