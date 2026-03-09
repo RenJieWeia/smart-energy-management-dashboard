@@ -4,12 +4,14 @@ interface AnimatedNumberProps {
   value: string | number;
   className?: string;
   duration?: number; // ms
+  decimals?: number; // number of decimal places
 }
 
 const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   value,
   className,
   duration = 1000,
+  decimals = 1,
 }) => {
   // Extract numeric part and non-numeric part (suffix/unit)
   const parseValue = (val: string | number) => {
@@ -56,10 +58,10 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
     };
   }, [targetNumber, duration]);
 
-  // Format number to match input precision if possible, or default to 1 decimal
-  const formattedNumber = displayNumber.toLocaleString(undefined, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
+  // Format number to match input precision if possible, or default to fractionDigits
+  const formattedNumber = displayNumber.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   });
 
   return (

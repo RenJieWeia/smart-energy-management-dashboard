@@ -8,6 +8,7 @@ import { useHummingBirdApi } from '@/hooks';
 import { getDeviceInfo } from '@/sdk/hbsdk';
 import { POLLING_INTERVAL } from '@/utils/constants';
 import { Zap } from 'lucide-react';
+import AnimatedNumber from '../common/AnimatedNumber';
 
 const EXTERNAL_METERS = [
   { id: '62415514', label: '1#电表' },
@@ -92,8 +93,8 @@ const DeviceMeterCard: React.FC<DeviceMeterCardProps> = ({ deviceId, label }) =>
               <span className="text-[9px] text-slate-600 font-tech shrink-0">{deviceId}</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold font-tech text-yellow-400 leading-none tracking-tight">
-                {powerData.num.toFixed(powerData.num % 1 === 0 ? 0 : 2)}
+              <span className="text-2xl font-bold font-tech text-yellow-400 leading-none tracking-tight inline-block min-w-0">
+                <AnimatedNumber value={powerData.num} decimals={powerData.num % 1 === 0 ? 0 : 2} />
               </span>
               {(powerData.unit && powerData.unit !== '-') && (
                 <span className="text-xs text-slate-500 ml-0.5">{powerData.unit}</span>
