@@ -63,7 +63,18 @@ export const EnergyHeatMeterChart: React.FC = () => {
 
   const totalPower = useExternalMetersTotalPower();
 
-  const systemCOP = dataMap.get('systemICOP') || 0;
+  // 获取冷冻/冷东侧热量表累计热量
+  const cumulativeHeat = useMemo(() => {
+    const prop = deviceData.find(d => 
+      d.name === '冷东侧热量表累计热量' || 
+      d.name === '冷冻侧热量表累计热量' ||
+      (d.name?.includes('热量表累计热量') && (d.name?.includes('冷东') || d.name?.includes('冷冻')))
+    );
+    return Number(prop?.value) || 0;
+  }, [deviceData]);
+
+  // calculation: 三块电表的用能综合 / 冷东侧热量表累计热量 (用户公式)
+  const systemCOP = cumulativeHeat > 0 ? (totalPower / cumulativeHeat) : 0;
 
   if (loading && deviceData.length === 0) {
     return (
@@ -89,18 +100,18 @@ export const EnergyHeatMeterChart: React.FC = () => {
         <div className="flex-1 flex items-center justify-between px-3 rounded bg-yellow-900/10 border border-yellow-500/20">
           <div className="flex items-center gap-2">
             <Zap size={16} className="text-yellow-400" />
-            <span className="text-xs text-yellow-300/80 font-medium">总功率</span>
+            <span className="text-xs text-yellow-300/80 font-medium">总电能</span>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-bold font-tech text-yellow-400 leading-none">
               {totalPower.toFixed(1)}
             </span>
-            <span className="text-[10px] text-yellow-500/70 font-medium">kW</span>
+            <span className="text-[10px] text-yellow-500/70 font-medium">kWh</span>
           </div>
         </div>
       </div>
 
-      {/* 电能表瞬时功率 - 三台独立电表 */}
+      {/* 电能表数据 - 三台独立电表 */}
       <ExternalMeterSection />
 
       {/* 热量表数据 */}
