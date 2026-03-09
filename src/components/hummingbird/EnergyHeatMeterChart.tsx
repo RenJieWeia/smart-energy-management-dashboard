@@ -61,12 +61,6 @@ export const EnergyHeatMeterChart: React.FC = () => {
     [dataMap]
   );
 
-  // 自控柜下的三块电表（1#热泵、2#热泵、水泵）的用能总和
-  const internalTotalEnergy = useMemo(() => 
-    electricityData.reduce((sum, meter) => sum + meter.energy, 0),
-    [electricityData]
-  );
-
   // 获取冷冻/冷东侧热量表累计热量
   const cumulativeHeat = useMemo(() => {
     const prop = deviceData.find(d => 
