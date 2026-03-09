@@ -12,8 +12,8 @@ import type {
 /** 默认设备ID */
 export const DEFAULT_DEVICE_ID = '42222843';
 
-/** 轮询间隔时间（毫秒） */
-export const POLLING_INTERVAL = 5000;
+/** 轮询间隔时间（毫秒）- 设为10秒 */
+export const POLLING_INTERVAL = 10000;
 
 /** 设备分组规则 */
 export const DEVICE_RULES: DeviceRule[] = [
