@@ -77,6 +77,22 @@ export const EnergyHeatMeterChart: React.FC = () => {
     return Number(prop?.value) || 0;
   }, [deviceData]);
 
+  // 为了健壮性容错，如果 crCode 拿不到数据，尝试通过前缀名称或者包含"电能"等字段动态查找对应的累计值
+  const internalTotalEnergy = useMemo(() => {
+    let sum = 0;
+    ELECTRICITY_METERS.forEach(meter => {
+      // 优先取 crCode 定义的字段
+      let energy = dataMap.get(meter.crCode);
+      if (typeof energy !== 'number' || isNaN(energy) || energy === 0) {
+        // 如果为0或找不到，通过名称做进一步推断(设备上报的字段可能带中文或变化)
+        const matchedProp = deviceData.find(d => d.code === meter.crCode || (d.name?.includes(meter.short) && d.name?.includes('电能')));
+        if (matchedProp) energy = Number(matchedProp.value) || 0;
+      }
+      sum += (energy || 0);
+    });
+    return sum;
+  }, [dataMap, deviceData]);
+
   // calculation: 三块电表的用能综合 / 冷东侧热量表累计热量 (用户公式)
   const systemCOP = cumulativeHeat > 0 ? (internalTotalEnergy / cumulativeHeat) : 0;
 
@@ -90,27 +106,43 @@ export const EnergyHeatMeterChart: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col gap-2">
-      {/* 系统COP & 总能耗(内部三块电表和) */}
-      <div className="flex gap-2 shrink-0 h-[14%]">
-        <div className="flex-1 flex items-center justify-between px-3 rounded bg-emerald-900/10 border border-emerald-500/20">
-          <div className="flex items-center gap-2">
-            <Gauge size={16} className="text-emerald-400" />
-            <span className="text-xs text-emerald-300/80 font-medium">系统COP</span>
-          </div>
-          <span className="text-2xl font-bold font-tech text-emerald-400 leading-none">
-            {systemCOP.toFixed(2)}
-          </span>
-        </div>
-        <div className="flex-1 flex items-center justify-between px-3 rounded bg-yellow-900/10 border border-yellow-500/20">
-          <div className="flex items-center gap-2">
-            <Zap size={16} className="text-yellow-400" />
-            <span className="text-xs text-yellow-300/80 font-medium">总电能</span>
-          </div>
+      {/* 效能综合分析栏 - 清楚表达计算关系 */}
+      <div className="flex gap-1 shrink-0 h-[14%] items-stretch">
+        {/* 指标 A：总电能 */}
+        <div className="flex-1 flex flex-col justify-center px-2 rounded bg-yellow-900/10 border border-yellow-500/20 relative group overflow-hidden">
+          <div className="text-[10px] text-yellow-300/80 font-medium mb-1">主控总电能 (A)</div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold font-tech text-yellow-400 leading-none">
+            <span className="text-xl font-bold font-tech text-yellow-400 leading-none">
               {internalTotalEnergy.toFixed(1)}
             </span>
-            <span className="text-[10px] text-yellow-500/70 font-medium">kWh</span>
+            <span className="text-[9px] text-yellow-500/70">kWh</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center font-tech text-slate-500 text-lg mx-0.5">÷</div>
+
+        {/* 指标 B：累计热量 */}
+        <div className="flex-1 flex flex-col justify-center px-2 rounded bg-cyan-900/10 border border-cyan-500/20 relative group overflow-hidden">
+          <div className="text-[10px] text-cyan-300/80 font-medium mb-1 truncate" title="冷东侧热量表累计热量">累计热量 (B)</div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-bold font-tech text-cyan-400 leading-none">
+              {cumulativeHeat.toFixed(1)}
+            </span>
+            <span className="text-[9px] text-cyan-500/70">kWh</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center font-tech text-slate-500 text-lg mx-0.5">=</div>
+
+        {/* 结果：系统COP */}
+        <div className="flex-1 flex flex-col justify-center px-2 rounded bg-emerald-900/10 border border-emerald-500/30 relative shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+          <div className="text-[10px] text-emerald-300/90 font-bold mb-1 flex items-center gap-1">
+            <Gauge size={10} /> COP (A/B)
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-bold font-tech text-emerald-400 leading-none">
+              {systemCOP.toFixed(2)}
+            </span>
           </div>
         </div>
       </div>
