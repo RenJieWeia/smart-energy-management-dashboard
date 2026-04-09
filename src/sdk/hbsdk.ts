@@ -22,16 +22,12 @@ export interface DeviceControlParams {
 
 /** 设备历史数据查询参数 */
 export interface DeviceHistoryParams {
-  /** 开始时间 */
-  startTime?: string;
-  /** 结束时间 */
-  endTime?: string;
   /** 属性代码 */
-  propertyCode?: string;
-  /** 页码 */
-  page?: number;
-  /** 每页数量 */
-  pageSize?: number;
+  code: string;
+  /** 开始和结束时间的时间戳数组 [startTimeMs, endTimeMs] 或按次序传入的多次 range */
+  range?: number[];
+  /** 是否获取全部属性 */
+  isAll?: boolean;
 }
 
 /**
@@ -73,16 +69,24 @@ export async function updateDevice(
 /**
  * 获取设备历史数据
  * @param deviceId - 设备ID
- * @param params - 查询参数
+ * @param params - 查询参数 (code 和 range 数组)
  * @returns 历史数据响应
  */
 export async function getDeviceHistoryData(
   deviceId: string = DEFAULT_DEVICE_ID,
-  params: DeviceHistoryParams = {}
-): Promise<unknown> {
+  params: DeviceHistoryParams
+): Promise<any> {
+  const query = new URLSearchParams();
+  query.append('code', params.code);
+  if (params.isAll !== undefined) {
+    query.append('isAll', String(params.isAll));
+  }
+  if (params.range && params.range.length > 0) {
+    params.range.forEach(r => query.append('range', String(r)));
+  }
+
   return hummingbirdInstance.get(
-    `/api/v1/device/${deviceId}/thing-model/history`,
-    { params }
+    `device/${deviceId}/thing-model/history-property?${query.toString()}`
   );
 }
 

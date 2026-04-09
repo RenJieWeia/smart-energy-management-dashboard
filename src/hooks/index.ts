@@ -7,5 +7,7 @@ export { useCityLayout } from './useCityLayout';
 // 蜂鸟物联平台 Hooks
 export { 
   useHummingBirdApi, 
-  type UseHummingBirdApiResult 
+  useHummingBirdHistoryApi,
+  type UseHummingBirdApiResult,
+  type HistoryDataPoint
 } from './useHummingBird';

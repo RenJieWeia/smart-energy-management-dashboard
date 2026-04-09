@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { getDeviceLastData } from "@/sdk/hbsdk";
+import { getDeviceLastData, getDeviceHistoryData } from "@/sdk/hbsdk";
 import { DEFAULT_DEVICE_ID, POLLING_INTERVAL } from "@/utils/constants";
 import {
   groupDeviceData,
@@ -124,6 +124,92 @@ export function useHummingBirdApi(
     deviceData,
     refresh,
   };
+}
+
+/** 历史数据点 */
+export interface HistoryDataPoint {
+  time: string;
+  [key: string]: string | number; // 允许任意电表的 code 作为 key 存入数据
+}
+
+/**
+ * 获取多项设备历史数据的 Hook
+ */
+export function useHummingBirdHistoryApi(
+  deviceId: string = DEFAULT_DEVICE_ID,
+  codes: string[] = [],
+  timeRangeHours: number = 1,
+) {
+  const [historyData, setHistoryData] = useState<HistoryDataPoint[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchHistoryData = useCallback(async () => {
+    if (codes.length === 0) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const endTime = Date.now();
+      const startTime = endTime - timeRangeHours * 3600 * 1000;
+
+      // 封装并发请求
+      const promises = codes.map((code) =>
+        getDeviceHistoryData(deviceId, {
+          code,
+          range: [startTime, endTime],
+          isAll: true,
+        }).catch((err) => {
+          console.error(`获取属性 ${code} 历史数据失败:`, err);
+          return null; // 单个请求失败不影响其他
+        }),
+      );
+
+      const results = await Promise.all(promises);
+
+      // 合并对齐各个属性的时间戳数据
+      const mergedMap = new Map<string, HistoryDataPoint>();
+
+      results.forEach((res, index) => {
+        const codeKey = codes[index];
+        const list = res?.result?.list || [];
+        
+        list.forEach((item: any) => {
+          const timeStr = new Date(item.time).toLocaleTimeString("zh-CN", {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          
+          if (!mergedMap.has(timeStr)) {
+            mergedMap.set(timeStr, { time: timeStr });
+          }
+          
+          const dataPoint = mergedMap.get(timeStr)!;
+          dataPoint[codeKey] = Number(item.value || 0);
+        });
+      });
+
+      // 排序返回结果
+      const sorted = Array.from(mergedMap.values()).sort((a, b) =>
+        a.time.localeCompare(b.time),
+      );
+      setHistoryData(sorted);
+    } catch (err) {
+      console.error("历史数据整理失败:", err);
+      setError(err instanceof Error ? err : new Error("获取历史数据失败"));
+    } finally {
+      setLoading(false);
+    }
+  }, [deviceId, codes.join(","), timeRangeHours]);
+
+  useEffect(() => {
+    fetchHistoryData();
+    const intervalId = setInterval(fetchHistoryData, 60000); // 每分钟拉取一次最新历史数据填补
+    return () => clearInterval(intervalId);
+  }, [fetchHistoryData]);
+
+  return { historyData, loading, error, refresh: fetchHistoryData };
 }
 
 // 导出 getSwitchList 以保持兼容性

@@ -3,7 +3,7 @@
  */
 
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
-import { HomePage, ApiTestPage } from '@/pages';
+import { HomePage, ApiTestPage, DashboardAnalysisPage } from '@/pages';
 
 const routes: RouteObject[] = [
   {
@@ -13,6 +13,10 @@ const routes: RouteObject[] = [
   {
     path: '/api-test',
     element: <ApiTestPage />,
+  },
+  {
+    path: '/dashboard',
+    element: <DashboardAnalysisPage />,
   },
 ];
 

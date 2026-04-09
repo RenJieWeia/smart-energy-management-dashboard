@@ -5,3 +5,4 @@
 export { default as HomePage } from './HomePage';
 export { default as ApiTestPage } from './ApiTestPage';
 export { default as DeviceMonitorPage } from './DeviceMonitorPage';
+export { default as DashboardAnalysisPage } from './DashboardAnalysisPage';

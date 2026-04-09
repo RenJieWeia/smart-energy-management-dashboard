@@ -11,3 +11,4 @@ export { EnergyMeterChart } from './EnergyMeterChart';
 export { FlowMeterChart } from './FlowMeterChart';
 export { EnergyHeatMeterChart } from './EnergyHeatMeterChart';
 export { ExternalMeterSection } from './ExternalMeterSection';
+export { EnergyHistoryChart } from './EnergyHistoryChart';

@@ -72,6 +72,28 @@ const Header: React.FC<HeaderProps> = ({ currentTime }) => {
       {/* 右侧控制面板 */}
       <div className="flex items-center space-x-6">
         <div className="flex space-x-8">
+          <Link 
+            to="/" 
+            className="flex flex-col items-center group cursor-pointer"
+          >
+            <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 group-hover:bg-cyan-500/30 transition-all">
+              <ShieldCheck size={20} className="text-cyan-300" />
+            </div>
+            <span className="text-[11px] mt-1 text-slate-200 font-black uppercase tracking-tighter">
+              主页
+            </span>
+          </Link>
+          <Link 
+            to="/dashboard" 
+            className="flex flex-col items-center group cursor-pointer"
+          >
+            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 group-hover:bg-emerald-500/30 transition-all">
+              <Network size={20} className="text-emerald-300" />
+            </div>
+            <span className="text-[11px] mt-1 text-slate-200 font-black uppercase tracking-tighter">
+              分析
+            </span>
+          </Link>
           <a 
             href="http://demo.jingneng.site:81" 
             target="_blank" 
