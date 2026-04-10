@@ -3,34 +3,109 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, CartesianGrid } from 'recharts';
-import { useHummingBirdApi } from '@/hooks';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { getDeviceHistoryData, getDeviceInfo } from '@/sdk/hbsdk';
-import type { DeviceProperty } from '@/types/hummingbird';
 
 interface DataPoint {
   time: string;
   timestamp: number;
+  bucketIndex: number;
   total: number;
+  compareTotal: number;
   [key: string]: string | number;
+}
+
+type TimeUnit = 'day' | 'month' | 'year';
+
+interface MeterSeriesItem {
+  deviceId: string;
+  key: string;
+  deviceName: string;
+  displayName: string;
+}
+
+interface TimeBucket {
+  key: string;
+  label: string;
+  timestamp: number;
 }
 
 const METER_DEVICE_IDS = ['62415514', '47862598', '28022392'];
 
-function getPowerPropertyName(deviceData: DeviceProperty[], fallback: string): string {
-  const byCode = deviceData.find((item) => item.code === 'power' && item.name);
-  if (byCode?.name) {
-    return byCode.name;
+const TIME_UNIT_OPTIONS: Array<{ value: TimeUnit; label: string }> = [
+  { value: 'day', label: '日' },
+  { value: 'month', label: '月' },
+  { value: 'year', label: '年' },
+];
+
+const CURRENT_STACK_COLORS = ['#22d3ee', '#34d399', '#60a5fa'];
+const COMPARE_BAR_STYLE = {
+  fill: '#f59e0b',
+  stroke: '#fbbf24',
+};
+
+function formatDateInputValue(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatMonthInputValue(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+function parseDateInputValue(value: string): Date | null {
+  const [yearStr, monthStr, dayStr] = value.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const day = Number(dayStr);
+
+  if (!year || !month || !day) {
+    return null;
   }
 
-  const byKeyword = deviceData.find(
-    (item) => /功率|电能|有功/i.test(item.name) || /power/i.test(item.code),
-  );
-  if (byKeyword?.name) {
-    return byKeyword.name;
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
+function parseMonthInputValue(value: string): Date | null {
+  const [yearStr, monthStr] = value.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+
+  if (!year || !month) {
+    return null;
   }
 
-  return fallback;
+  return new Date(year, month - 1, 1, 12, 0, 0, 0);
+}
+
+function shiftAnchorDate(unit: TimeUnit, anchorDate: Date, offset: number): Date {
+  const next = new Date(anchorDate.getTime());
+
+  if (unit === 'day') {
+    next.setDate(next.getDate() + offset);
+    return next;
+  }
+
+  if (unit === 'month') {
+    next.setMonth(next.getMonth() + offset, 1);
+    return next;
+  }
+
+  next.setFullYear(next.getFullYear() + offset, 0, 1);
+  return next;
 }
 
 function pickHistoryList(response: unknown): Array<{ time?: number; timestamp?: number; value?: number | string }> {
@@ -55,17 +130,119 @@ function pickHistoryList(response: unknown): Array<{ time?: number; timestamp?: 
   return [];
 }
 
+function getPeriodRange(
+  unit: TimeUnit,
+  anchorDate: Date,
+  scope: 'current' | 'previous' = 'current',
+): { startTime: number; endTime: number } {
+  const targetDate = scope === 'previous' ? shiftAnchorDate(unit, anchorDate, -1) : anchorDate;
+  const y = targetDate.getFullYear();
+  const m = targetDate.getMonth();
+  const d = targetDate.getDate();
+
+  if (unit === 'day') {
+    return {
+      startTime: new Date(y, m, d, 0, 0, 0, 0).getTime(),
+      endTime: new Date(y, m, d, 23, 59, 59, 999).getTime(),
+    };
+  }
+
+  if (unit === 'month') {
+    return {
+      startTime: new Date(y, m, 1, 0, 0, 0, 0).getTime(),
+      endTime: new Date(y, m + 1, 0, 23, 59, 59, 999).getTime(),
+    };
+  }
+
+  return {
+    startTime: new Date(y, 0, 1, 0, 0, 0, 0).getTime(),
+    endTime: new Date(y, 11, 31, 23, 59, 59, 999).getTime(),
+  };
+}
+
+function createTimeBuckets(unit: TimeUnit, anchorDate: Date): TimeBucket[] {
+  const y = anchorDate.getFullYear();
+  const m = anchorDate.getMonth();
+  const d = anchorDate.getDate();
+
+  if (unit === 'day') {
+    return Array.from({ length: 24 }, (_, hour) => ({
+      key: String(hour),
+      label: `${String(hour).padStart(2, '0')}:00`,
+      timestamp: new Date(y, m, d, hour, 0, 0, 0).getTime(),
+    }));
+  }
+
+  if (unit === 'month') {
+    const dayCount = new Date(y, m + 1, 0).getDate();
+    return Array.from({ length: dayCount }, (_, dayIndex) => {
+      const day = dayIndex + 1;
+      return {
+        key: String(day),
+        label: `${String(day).padStart(2, '0')}日`,
+        timestamp: new Date(y, m, day, 0, 0, 0, 0).getTime(),
+      };
+    });
+  }
+
+  return Array.from({ length: 12 }, (_, monthIndex) => {
+    const month = monthIndex + 1;
+    return {
+      key: String(month),
+      label: `${String(month).padStart(2, '0')}月`,
+      timestamp: new Date(y, monthIndex, 1, 0, 0, 0, 0).getTime(),
+    };
+  });
+}
+
+function resolveBucketKey(rawTime: number, unit: TimeUnit): string {
+  const date = new Date(rawTime);
+  if (unit === 'day') {
+    return String(date.getHours());
+  }
+  if (unit === 'month') {
+    return String(date.getDate());
+  }
+  return String(date.getMonth() + 1);
+}
+
+function getComparePeriodLabel(unit: TimeUnit): string {
+  if (unit === 'day') {
+    return '前一日';
+  }
+  if (unit === 'month') {
+    return '前一月';
+  }
+  return '前一年';
+}
+
+function getXAxisInterval(unit: TimeUnit, count: number): number {
+  if (unit === 'day') {
+    return 1;
+  }
+  if (unit === 'month') {
+    return count > 15 ? 2 : 1;
+  }
+  return 0;
+}
+
 export const EnergyHistoryChart: React.FC = () => {
-  const [timeRangeHours, setTimeRangeHours] = useState<number>(1);
+  const [timeUnit, setTimeUnit] = useState<TimeUnit>('day');
+  const [selectedAnchorDate, setSelectedAnchorDate] = useState<Date>(() => new Date());
   const [historyData, setHistoryData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [deviceNameMap, setDeviceNameMap] = useState<Record<string, string>>({});
 
-  // 参考 API-Test 的调用方式：按设备 ID 拉实时属性，名称直接取 API 返回值
-  const meter1 = useHummingBirdApi(METER_DEVICE_IDS[0], 0);
-  const meter2 = useHummingBirdApi(METER_DEVICE_IDS[1], 0);
-  const meter3 = useHummingBirdApi(METER_DEVICE_IDS[2], 0);
+  const dateInputValue = useMemo(
+    () => formatDateInputValue(selectedAnchorDate),
+    [selectedAnchorDate],
+  );
+
+  const monthInputValue = useMemo(
+    () => formatMonthInputValue(selectedAnchorDate),
+    [selectedAnchorDate],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -94,27 +271,12 @@ export const EnergyHistoryChart: React.FC = () => {
     };
   }, []);
 
-  const meterSeries = useMemo(() => {
-    const series = [
-      {
-        deviceId: METER_DEVICE_IDS[0],
-        key: `device_${METER_DEVICE_IDS[0]}`,
-        deviceName: deviceNameMap[METER_DEVICE_IDS[0]] || `设备 ${METER_DEVICE_IDS[0]}`,
-        metricName: getPowerPropertyName(meter1.deviceData, '功率'),
-      },
-      {
-        deviceId: METER_DEVICE_IDS[1],
-        key: `device_${METER_DEVICE_IDS[1]}`,
-        deviceName: deviceNameMap[METER_DEVICE_IDS[1]] || `设备 ${METER_DEVICE_IDS[1]}`,
-        metricName: getPowerPropertyName(meter2.deviceData, '功率'),
-      },
-      {
-        deviceId: METER_DEVICE_IDS[2],
-        key: `device_${METER_DEVICE_IDS[2]}`,
-        deviceName: deviceNameMap[METER_DEVICE_IDS[2]] || `设备 ${METER_DEVICE_IDS[2]}`,
-        metricName: getPowerPropertyName(meter3.deviceData, '功率'),
-      },
-    ];
+  const meterSeries = useMemo<MeterSeriesItem[]>(() => {
+    const series = METER_DEVICE_IDS.map((deviceId) => ({
+      deviceId,
+      key: `device_${deviceId}`,
+      deviceName: deviceNameMap[deviceId] || `设备 ${deviceId}`,
+    }));
 
     // 优先展示电表设备名称，避免都显示为同一属性名（如“用功总电能”）
     const nameCounter = new Map<string, number>();
@@ -126,79 +288,149 @@ export const EnergyHistoryChart: React.FC = () => {
         displayName: count > 1 ? `${item.deviceName} (${item.deviceId})` : item.deviceName,
       };
     });
-  }, [meter1.deviceData, meter2.deviceData, meter3.deviceData, deviceNameMap]);
+  }, [deviceNameMap]);
+
+  const handleDayChange = useCallback((value: string) => {
+    const parsedDate = parseDateInputValue(value);
+    if (!parsedDate) {
+      return;
+    }
+    setSelectedAnchorDate(parsedDate);
+  }, []);
+
+  const handleMonthChange = useCallback((value: string) => {
+    const parsedDate = parseMonthInputValue(value);
+    if (!parsedDate) {
+      return;
+    }
+    setSelectedAnchorDate(parsedDate);
+  }, []);
+
+  const handleYearChange = useCallback((value: string) => {
+    const year = Number(value);
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      return;
+    }
+    setSelectedAnchorDate(new Date(year, 0, 1, 12, 0, 0, 0));
+  }, []);
 
   const fetchHistoryData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const endTime = Date.now();
-      const startTime = endTime - timeRangeHours * 3600 * 1000;
+      const currentRange = getPeriodRange(timeUnit, selectedAnchorDate, 'current');
+      const previousRange = getPeriodRange(timeUnit, selectedAnchorDate, 'previous');
+      const buckets = createTimeBuckets(timeUnit, selectedAnchorDate);
 
-      // 参考 demo：每个电表设备都按 code=power 拉历史
-      const responses = await Promise.all(
-        meterSeries.map((series) =>
-          getDeviceHistoryData(series.deviceId, {
-            code: 'power',
-            range: [startTime, endTime],
-            isAll: true,
-          }).catch((err) => {
-            console.error(`拉取电表历史失败: ${series.deviceId}`, err);
-            return null;
-          }),
-        ),
-      );
+      const mergedMap = new Map<string, DataPoint>();
 
-      const mergedMap = new Map<number, DataPoint>();
-
-      responses.forEach((response, index) => {
-        const series = meterSeries[index];
-        const list = pickHistoryList(response);
-
-        list.forEach((item) => {
-          const rawTime = Number(item.time ?? item.timestamp ?? 0);
-          if (!rawTime) {
-            return;
-          }
-
-          // 按分钟聚合，避免秒级时间差造成无法对齐
-          const bucket = Math.floor(rawTime / 60000) * 60000;
-          const value = Number(item.value ?? 0) || 0;
-
-          if (!mergedMap.has(bucket)) {
-            const date = new Date(bucket);
-            const hh = String(date.getHours()).padStart(2, '0');
-            const mm = String(date.getMinutes()).padStart(2, '0');
-            mergedMap.set(bucket, {
-              timestamp: bucket,
-              time: `${hh}:${mm}`,
-              total: 0,
-            });
-          }
-
-          const point = mergedMap.get(bucket)!;
-          point[series.key] = value;
+      buckets.forEach((bucket, index) => {
+        mergedMap.set(bucket.key, {
+          time: bucket.label,
+          timestamp: bucket.timestamp,
+          bucketIndex: index,
+          total: 0,
+          compareTotal: 0,
         });
       });
+
+      const [currentResponses, compareResponses] = await Promise.all([
+        Promise.all(
+          meterSeries.map((series) =>
+            getDeviceHistoryData(series.deviceId, {
+              code: 'power',
+              range: [currentRange.startTime, currentRange.endTime],
+              isAll: true,
+            }).catch((err) => {
+              console.error(`拉取当期电表历史失败: ${series.deviceId}`, err);
+              return null;
+            }),
+          ),
+        ),
+        Promise.all(
+          meterSeries.map((series) =>
+            getDeviceHistoryData(series.deviceId, {
+              code: 'power',
+              range: [previousRange.startTime, previousRange.endTime],
+              isAll: true,
+            }).catch((err) => {
+              console.error(`拉取对比期电表历史失败: ${series.deviceId}`, err);
+              return null;
+            }),
+          ),
+        ),
+      ]);
+
+      const mergePeriodResponses = (
+        responses: Array<unknown | null>,
+        range: { startTime: number; endTime: number },
+        scope: 'current' | 'compare',
+      ) => {
+        responses.forEach((response, index) => {
+          const series = meterSeries[index];
+          const list = pickHistoryList(response);
+
+          list.forEach((item) => {
+            const rawTime = Number(item.time ?? item.timestamp ?? 0);
+            if (!rawTime || rawTime < range.startTime || rawTime > range.endTime) {
+              return;
+            }
+
+            const bucketKey = resolveBucketKey(rawTime, timeUnit);
+            const value = Number(item.value ?? 0) || 0;
+            const point = mergedMap.get(bucketKey);
+
+            if (!point) {
+              return;
+            }
+
+            const sumKey = `${series.key}_${scope}_sum`;
+            const countKey = `${series.key}_${scope}_count`;
+
+            point[sumKey] = Number(point[sumKey] || 0) + value;
+            point[countKey] = Number(point[countKey] || 0) + 1;
+          });
+        });
+      };
+
+      mergePeriodResponses(currentResponses, currentRange, 'current');
+      mergePeriodResponses(compareResponses, previousRange, 'compare');
 
       const merged = Array.from(mergedMap.values())
         .sort((a, b) => a.timestamp - b.timestamp)
         .map((point) => {
-          const total = meterSeries.reduce((sum, series) => {
-            return sum + Number(point[series.key] || 0);
-          }, 0);
+          let total = 0;
+          let compareTotal = 0;
 
-          // 补齐缺失 series，防止折线断裂
           meterSeries.forEach((series) => {
-            if (point[series.key] === undefined) {
-              point[series.key] = 0;
-            }
+            const currentSumKey = `${series.key}_current_sum`;
+            const currentCountKey = `${series.key}_current_count`;
+            const compareSumKey = `${series.key}_compare_sum`;
+            const compareCountKey = `${series.key}_compare_count`;
+
+            const currentSum = Number(point[currentSumKey] || 0);
+            const currentCount = Number(point[currentCountKey] || 0);
+            const currentAverage = currentCount > 0 ? currentSum / currentCount : 0;
+
+            const compareSum = Number(point[compareSumKey] || 0);
+            const compareCount = Number(point[compareCountKey] || 0);
+            const compareAverage = compareCount > 0 ? compareSum / compareCount : 0;
+
+            point[series.key] = Number(currentAverage.toFixed(2));
+            total += currentAverage;
+            compareTotal += compareAverage;
+
+            delete point[currentSumKey];
+            delete point[currentCountKey];
+            delete point[compareSumKey];
+            delete point[compareCountKey];
           });
 
           return {
             ...point,
             total: Number(total.toFixed(2)),
+            compareTotal: Number(compareTotal.toFixed(2)),
           };
         });
 
@@ -209,7 +441,7 @@ export const EnergyHistoryChart: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [meterSeries, timeRangeHours]);
+  }, [meterSeries, timeUnit, selectedAnchorDate]);
 
   useEffect(() => {
     fetchHistoryData();
@@ -218,24 +450,75 @@ export const EnergyHistoryChart: React.FC = () => {
   }, [fetchHistoryData]);
 
   const chartData = historyData;
+  const hasData = useMemo(
+    () => chartData.some((point) => point.total > 0 || Number(point.compareTotal) > 0),
+    [chartData],
+  );
 
-  // 计算实时环比变化(与窗口期最前端数据对比)
-  const stats = useMemo(() => {
-    if (chartData.length < 2) {
-      return { currentTotal: '0.0', momRatio: '0.0', isIncrease: false };
+  const comparePeriodLabel = useMemo(() => getComparePeriodLabel(timeUnit), [timeUnit]);
+
+  const periodLabel = useMemo(() => {
+    const y = selectedAnchorDate.getFullYear();
+    const m = String(selectedAnchorDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedAnchorDate.getDate()).padStart(2, '0');
+
+    if (timeUnit === 'day') {
+      return `${y}-${m}-${d}`;
     }
-    const current = chartData[chartData.length - 1].total;
-    const oldest = chartData[0].total; // 与窗口期开始时对比
-    const momRatio = oldest > 0 ? ((current - oldest) / oldest) * 100 : 0;
-    
+    if (timeUnit === 'month') {
+      return `${y}-${m}`;
+    }
+    return String(y);
+  }, [timeUnit, selectedAnchorDate]);
+
+  const granularityLabel = useMemo(() => {
+    if (timeUnit === 'day') {
+      return '小时';
+    }
+    if (timeUnit === 'month') {
+      return '日';
+    }
+    return '月';
+  }, [timeUnit]);
+
+  // 计算当前周期与前一周期变化
+  const stats = useMemo(() => {
+    if (chartData.length === 0) {
+      return {
+        currentTotal: '0.0',
+        periodCompareRatio: '0.0',
+        currentPeriodTotal: '0.0',
+        comparePeriodTotal: '0.0',
+        isIncrease: false,
+      };
+    }
+
+    const activePoints = chartData.filter((point) => point.total > 0);
+    const currentPoint =
+      activePoints[activePoints.length - 1] || chartData[chartData.length - 1];
+
+    const current = currentPoint?.total || 0;
+    const currentPeriodTotal = chartData.reduce(
+      (sum, point) => sum + Number(point.total || 0),
+      0,
+    );
+    const comparePeriodTotal = chartData.reduce(
+      (sum, point) => sum + Number(point.compareTotal || 0),
+      0,
+    );
+    const periodCompareRatio =
+      comparePeriodTotal > 0
+        ? ((currentPeriodTotal - comparePeriodTotal) / comparePeriodTotal) * 100
+        : 0;
+
     return {
       currentTotal: current.toFixed(1),
-      momRatio: momRatio.toFixed(1),
-      isIncrease: momRatio >= 0
+      periodCompareRatio: periodCompareRatio.toFixed(1),
+      currentPeriodTotal: currentPeriodTotal.toFixed(1),
+      comparePeriodTotal: comparePeriodTotal.toFixed(1),
+      isIncrease: periodCompareRatio >= 0,
     };
   }, [chartData]);
-
-  const COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e', '#14b8a6', '#f97316'];
 
   return (
     <div className="h-full flex flex-col pt-2">
@@ -243,95 +526,157 @@ export const EnergyHistoryChart: React.FC = () => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-4">
           <div className="flex flex-col">
-            <span className="text-xs text-slate-400">实时总功率 (kW)</span>
+            <span className="text-xs text-slate-400">当前总功率 (kW)</span>
             <span className="text-xl font-bold text-cyan-400">{stats.currentTotal}</span>
+            <span className="text-[10px] text-slate-500 mt-0.5">统计周期: {periodLabel}</span>
           </div>
           <div className="flex flex-col justify-end pb-1">
             <span className="text-xs text-slate-400 flex items-center gap-1">
-              较期初峰值: 
+              较{comparePeriodLabel}累计:
               <span className={`font-bold ${stats.isIncrease ? 'text-rose-500' : 'text-emerald-500'}`}>
-                {stats.isIncrease ? '↑' : '↓'} {Math.abs(Number(stats.momRatio))}%
+                {stats.isIncrease ? '↑' : '↓'} {Math.abs(Number(stats.periodCompareRatio))}%
               </span>
+            </span>
+            <span className="text-[10px] text-slate-500">
+              累计: {stats.currentPeriodTotal} / {stats.comparePeriodTotal} (kW)
             </span>
           </div>
         </div>
-        
-        <div className="flex gap-2">
+
+        <div className="flex gap-2 items-center">
           {error ? (
-             <div className="text-red-500 text-xs self-center mr-2 truncate max-w-[100px]">{error.message}</div>
+            <div className="text-red-500 text-xs self-center mr-2 truncate max-w-[120px]">{error.message}</div>
           ) : loading ? (
-             <div className="text-cyan-500 text-xs self-center mr-2 animate-pulse">请求中...</div>
+            <div className="text-cyan-500 text-xs self-center mr-2 animate-pulse">请求中...</div>
           ) : (
-             <div className="text-emerald-500 text-xs self-center mr-2 cursor-pointer hover:text-emerald-400" onClick={fetchHistoryData} title="手动刷新">数据就绪</div>
+            <div
+              className="text-emerald-500 text-xs self-center mr-2 cursor-pointer hover:text-emerald-400"
+              onClick={fetchHistoryData}
+              title="手动刷新"
+            >
+              数据就绪
+            </div>
           )}
-          <button 
-            className={`px-3 py-1 text-xs rounded border ${timeRangeHours === 1 ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'border-slate-700 text-slate-400 hover:border-slate-500'}`}
-            onClick={() => setTimeRangeHours(1)}
-          >
-            近1小时
-          </button>
-          <button 
-            className={`px-3 py-1 text-xs rounded border ${timeRangeHours === 4 ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'border-slate-700 text-slate-400 hover:border-slate-500'}`}
-            onClick={() => setTimeRangeHours(4)}
-          >
-            近4小时
-          </button>
+
+          {TIME_UNIT_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              className={`px-3 py-1 text-xs rounded border ${timeUnit === option.value ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'border-slate-700 text-slate-400 hover:border-slate-500'}`}
+              onClick={() => setTimeUnit(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+
+          {timeUnit === 'day' && (
+            <input
+              type="date"
+              value={dateInputValue}
+              onChange={(event) => handleDayChange(event.target.value)}
+              className="h-7 rounded border border-slate-700 bg-slate-900/80 px-2 text-xs text-slate-200 outline-none hover:border-slate-500 focus:border-cyan-500"
+              title="选择日期"
+            />
+          )}
+
+          {timeUnit === 'month' && (
+            <input
+              type="month"
+              value={monthInputValue}
+              onChange={(event) => handleMonthChange(event.target.value)}
+              className="h-7 rounded border border-slate-700 bg-slate-900/80 px-2 text-xs text-slate-200 outline-none hover:border-slate-500 focus:border-cyan-500"
+              title="选择月份"
+            />
+          )}
+
+          {timeUnit === 'year' && (
+            <input
+              type="number"
+              min={2000}
+              max={2100}
+              step={1}
+              value={selectedAnchorDate.getFullYear()}
+              onChange={(event) => handleYearChange(event.target.value)}
+              className="h-7 w-20 rounded border border-slate-700 bg-slate-900/80 px-2 text-xs text-slate-200 outline-none hover:border-slate-500 focus:border-cyan-500"
+              title="选择年份"
+            />
+          )}
         </div>
+      </div>
+
+      <div className="mb-2 text-[10px] text-slate-500">
+        对比维度: 当期按{granularityLabel}统计，并与{comparePeriodLabel}总功率同位叠加显示
       </div>
 
       {/* 图表 */}
       <div className="flex-1 min-h-0">
-        {!loading && chartData.length === 0 ? (
+        {!loading && !hasData ? (
           <div className="h-full w-full flex items-center justify-center text-slate-500 text-sm">
-            当前时间段暂无历史数据
+            当前周期与对比周期暂无历史数据
           </div>
         ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-            <XAxis 
-              dataKey="time" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 10 }}
-              dy={10}
-            />
-            <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 10 }}
-            />
-            <Tooltip 
-              contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: '8px' }}
-              itemStyle={{ fontSize: '12px' }}
-              labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '12px' }}
-            />
-            <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-            <Line 
-              name="总功率 (kW)"
-              type="monotone" 
-              dataKey="total" 
-              stroke="#06b6d4" 
-              strokeWidth={3}
-              dot={{ r: 2, fill: '#0a0f1c', strokeWidth: 2 }}
-              activeDot={{ r: 5, fill: '#06b6d4', stroke: '#fff' }}
-              isAnimationActive={true}
-            />
-            {meterSeries.map((series, index) => (
-              <Line 
-                key={series.key}
-                name={series.displayName} 
-                type="monotone" 
-                dataKey={series.key} 
-                stroke={COLORS[index % COLORS.length]} 
-                strokeWidth={1} 
-                strokeDasharray="3 3" 
-                dot={false} 
-                isAnimationActive={true} 
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+              barCategoryGap="24%"
+              barGap={8}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#64748b', fontSize: 10 }}
+                interval={getXAxisInterval(timeUnit, chartData.length)}
+                minTickGap={4}
+                dy={10}
               />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#64748b', fontSize: 10 }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                  borderRadius: '8px',
+                }}
+                itemStyle={{ fontSize: '12px' }}
+                labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '12px' }}
+                labelFormatter={(label) => `${granularityLabel}: ${String(label)}`}
+                formatter={(value: number | string, name: string) => [
+                  `${Number(value).toFixed(2)} kW`,
+                  name,
+                ]}
+              />
+              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+
+              <Bar
+                name={`${comparePeriodLabel}总功率`}
+                dataKey="compareTotal"
+                fill={COMPARE_BAR_STYLE.fill}
+                stroke={COMPARE_BAR_STYLE.stroke}
+                strokeWidth={1}
+                barSize={12}
+                radius={[4, 4, 0, 0]}
+                isAnimationActive={true}
+              />
+
+              {meterSeries.map((series, index) => (
+                <Bar
+                  key={series.key}
+                  name={series.displayName}
+                  dataKey={series.key}
+                  stackId="current"
+                  fill={CURRENT_STACK_COLORS[index % CURRENT_STACK_COLORS.length]}
+                  barSize={12}
+                  radius={index === meterSeries.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                  isAnimationActive={true}
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
         )}
       </div>
     </div>

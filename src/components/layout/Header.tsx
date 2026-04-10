@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Cpu, Network, Box } from "lucide-react";
+import { ShieldCheck, Cpu, Network, Box, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDashboard } from "../../contexts/DashboardContext";
 
@@ -105,6 +105,19 @@ const Header: React.FC<HeaderProps> = ({ currentTime }) => {
             </div>
             <span className="text-[11px] mt-1 text-slate-200 font-black uppercase tracking-tighter">
               3D
+            </span>
+          </a>
+          <a 
+            href="http://hb.jingneng.site:81" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex flex-col items-center group cursor-pointer"
+          >
+            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 group-hover:bg-amber-500/30 transition-all">
+              <ExternalLink size={20} className="text-amber-300" />
+            </div>
+            <span className="text-[11px] mt-1 text-slate-200 font-black uppercase tracking-tighter">
+              HB
             </span>
           </a>
         </div>
