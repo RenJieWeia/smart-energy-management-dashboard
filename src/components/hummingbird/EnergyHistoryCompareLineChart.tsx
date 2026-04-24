@@ -1,13 +1,13 @@
 /**
- * 电表能耗历史趋势分析组件
+ * 电表能耗同周期曲线对比组件
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -41,10 +41,14 @@ interface TimeBucket {
 
 const METER_DEVICE_IDS = ['62415514', '47862598', '28022392'];
 
-const CURRENT_STACK_COLORS = ['#22d3ee', '#34d399', '#60a5fa'];
-const COMPARE_BAR_STYLE = {
-  fill: '#f59e0b',
-  stroke: '#fbbf24',
+const CURRENT_LINE_STYLE = {
+  color: '#22d3ee',
+  dotColor: '#67e8f9',
+};
+
+const COMPARE_LINE_STYLE = {
+  color: '#f59e0b',
+  dotColor: '#fbbf24',
 };
 
 function formatDateInputValue(date: Date): string {
@@ -220,7 +224,7 @@ function getXAxisInterval(unit: TimeUnit, count: number): number {
   return 0;
 }
 
-export const EnergyHistoryChart: React.FC = () => {
+export const EnergyHistoryCompareLineChart: React.FC = () => {
   const [timeUnit, setTimeUnit] = useState<TimeUnit>('day');
   const [selectedSourceId, setSelectedSourceId] = useState<string>('all');
   const [selectedAnchorDate, setSelectedAnchorDate] = useState<Date>(() => new Date());
@@ -273,7 +277,6 @@ export const EnergyHistoryChart: React.FC = () => {
       deviceName: deviceNameMap[deviceId] || `设备 ${deviceId}`,
     }));
 
-    // 优先展示电表设备名称，避免都显示为同一属性名（如“用功总电能”）
     const nameCounter = new Map<string, number>();
     return series.map((item) => {
       const count = (nameCounter.get(item.deviceName) ?? 0) + 1;
@@ -497,7 +500,6 @@ export const EnergyHistoryChart: React.FC = () => {
     return '月';
   }, [timeUnit]);
 
-  // 计算当前周期与前一周期变化
   const stats = useMemo(() => {
     if (chartData.length === 0) {
       return {
@@ -538,7 +540,6 @@ export const EnergyHistoryChart: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col pt-2">
-      {/* 头部控制与统计 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-4">
           <div className="flex flex-col">
@@ -627,10 +628,9 @@ export const EnergyHistoryChart: React.FC = () => {
       </div>
 
       <div className="mb-2 text-[10px] text-slate-500">
-        对比维度: 当期按{granularityLabel}统计，并与{comparePeriodLabel}总功率同位叠加显示
+        对比维度: 当期按{granularityLabel}统计，并与{comparePeriodLabel}同粒度总功率曲线对照
       </div>
 
-      {/* 图表 */}
       <div className="flex-1 min-h-0">
         {!loading && !hasData ? (
           <div className="h-full w-full flex items-center justify-center text-slate-500 text-sm">
@@ -638,12 +638,7 @@ export const EnergyHistoryChart: React.FC = () => {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
-              barCategoryGap="24%"
-              barGap={8}
-            >
+            <LineChart data={chartData} margin={{ top: 8, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis
                 dataKey="time"
@@ -675,30 +670,28 @@ export const EnergyHistoryChart: React.FC = () => {
               />
               <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
 
-              <Bar
-                name={`${comparePeriodLabel}${selectedSourceId === 'all' ? '总功率' : '功率'}`}
-                dataKey="compareTotal"
-                fill={COMPARE_BAR_STYLE.fill}
-                stroke={COMPARE_BAR_STYLE.stroke}
-                strokeWidth={1}
-                barSize={12}
-                radius={[4, 4, 0, 0]}
+              <Line
+                type="monotone"
+                name={selectedSourceId === 'all' ? '当期总功率' : `当期 ${selectedSourceLabel}`}
+                dataKey="total"
+                stroke={CURRENT_LINE_STYLE.color}
+                strokeWidth={2.4}
+                dot={{ r: 2, fill: CURRENT_LINE_STYLE.dotColor, strokeWidth: 0 }}
+                activeDot={{ r: 4, fill: CURRENT_LINE_STYLE.dotColor }}
                 isAnimationActive={true}
               />
-
-              {activeSeries.map((series, index) => (
-                <Bar
-                  key={series.key}
-                  name={series.displayName}
-                  dataKey={series.key}
-                  stackId="current"
-                  fill={CURRENT_STACK_COLORS[index % CURRENT_STACK_COLORS.length]}
-                  barSize={12}
-                  radius={index === meterSeries.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                  isAnimationActive={true}
-                />
-              ))}
-            </BarChart>
+              <Line
+                type="monotone"
+                name={selectedSourceId === 'all' ? `${comparePeriodLabel}总功率` : `${comparePeriodLabel} ${selectedSourceLabel}`}
+                dataKey="compareTotal"
+                stroke={COMPARE_LINE_STYLE.color}
+                strokeWidth={2.2}
+                strokeDasharray="6 3"
+                dot={{ r: 2, fill: COMPARE_LINE_STYLE.dotColor, strokeWidth: 0 }}
+                activeDot={{ r: 4, fill: COMPARE_LINE_STYLE.dotColor }}
+                isAnimationActive={true}
+              />
+            </LineChart>
           </ResponsiveContainer>
         )}
       </div>
@@ -706,4 +699,4 @@ export const EnergyHistoryChart: React.FC = () => {
   );
 };
 
-export default EnergyHistoryChart;
+export default EnergyHistoryCompareLineChart;

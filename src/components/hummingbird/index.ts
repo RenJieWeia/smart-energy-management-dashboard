@@ -12,3 +12,4 @@ export { FlowMeterChart } from './FlowMeterChart';
 export { EnergyHeatMeterChart } from './EnergyHeatMeterChart';
 export { ExternalMeterSection } from './ExternalMeterSection';
 export { EnergyHistoryChart } from './EnergyHistoryChart';
+export { EnergyHistoryCompareLineChart } from './EnergyHistoryCompareLineChart';

@@ -6,10 +6,12 @@ import {
   Gauge,
   Server,
   Thermometer,
+  TrendingUp,
   Waves,
 } from "lucide-react";
 import {
   DeviceStatusList,
+  EnergyHistoryCompareLineChart,
   EnergyHistoryChart,
   EnergyMeterChart,
   FlowMeterChart,
@@ -136,18 +138,28 @@ const DashboardAnalysisPage: React.FC = () => {
             title="电表能耗历史趋势与同比环比分析"
             subtitle="历史曲线、总量聚合与短周期波动观测"
             icon={<BarChart3 size={16} />}
-            className="animate-zoom-in xl:col-span-8"
+            className="animate-zoom-in xl:col-span-6"
             bodyClassName="h-[320px] md:h-[360px]"
           >
             <EnergyHistoryChart />
           </DashboardPanel>
 
           <DashboardPanel
+            title="电表同周期曲线对比分析"
+            subtitle="当期与上一周期同粒度曲线联动对照"
+            icon={<TrendingUp size={16} />}
+            className="animate-zoom-in delay-100 xl:col-span-6"
+            bodyClassName="h-[320px] md:h-[360px]"
+          >
+            <EnergyHistoryCompareLineChart />
+          </DashboardPanel>
+
+          <DashboardPanel
             title="实时电能消耗监控"
             subtitle="多电表当前功率分布与负载分级"
             icon={<Activity size={16} />}
-            className="animate-slide-left delay-100 xl:col-span-4"
-            bodyClassName="h-[320px] md:h-[360px]"
+            className="animate-slide-up delay-100 xl:col-span-4"
+            bodyClassName="h-[300px] md:h-[320px]"
           >
             <EnergyMeterChart />
           </DashboardPanel>
@@ -156,8 +168,8 @@ const DashboardAnalysisPage: React.FC = () => {
             title="设备状态监控"
             subtitle="设备运行状态、异常与联动告警"
             icon={<Server size={16} />}
-            className="animate-slide-left delay-200 xl:col-span-4 xl:row-span-2"
-            bodyClassName="h-full min-h-[280px] xl:min-h-[560px]"
+            className="animate-slide-up delay-200 xl:col-span-4"
+            bodyClassName="h-[300px] md:h-[320px]"
           >
             <div className="h-full min-h-[250px]">
               <DeviceStatusList />
@@ -165,11 +177,21 @@ const DashboardAnalysisPage: React.FC = () => {
           </DashboardPanel>
 
           <DashboardPanel
+            title="管网压力分析"
+            subtitle="供回压监测与波动预警"
+            icon={<Gauge size={16} />}
+            className="animate-slide-up delay-300 xl:col-span-4"
+            bodyClassName="h-[300px] md:h-[320px]"
+          >
+            <PressureChart />
+          </DashboardPanel>
+
+          <DashboardPanel
             title="供水流量分析"
             subtitle="流量变动与回路稳定性"
             icon={<Waves size={16} />}
-            className="animate-slide-up delay-100 xl:col-span-4"
-            bodyClassName="h-[250px]"
+            className="animate-slide-up delay-100 xl:col-span-6"
+            bodyClassName="h-[250px] md:h-[260px]"
           >
             <FlowMeterChart />
           </DashboardPanel>
@@ -178,20 +200,10 @@ const DashboardAnalysisPage: React.FC = () => {
             title="供暖温度分析"
             subtitle="多点温度趋势与工况响应"
             icon={<Thermometer size={16} />}
-            className="animate-slide-up delay-200 xl:col-span-4"
-            bodyClassName="h-[250px]"
+            className="animate-slide-up delay-200 xl:col-span-6"
+            bodyClassName="h-[250px] md:h-[260px]"
           >
             <TemperatureChart />
-          </DashboardPanel>
-
-          <DashboardPanel
-            title="管网压力分析"
-            subtitle="供回压监测与波动预警"
-            icon={<Gauge size={16} />}
-            className="animate-slide-up delay-300 xl:col-span-8"
-            bodyClassName="h-[250px]"
-          >
-            <PressureChart />
           </DashboardPanel>
         </div>
       </div>
