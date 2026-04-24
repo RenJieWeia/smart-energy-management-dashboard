@@ -40,6 +40,11 @@ interface TimeBucket {
 }
 
 const METER_DEVICE_IDS = ['62415514', '47862598', '28022392'];
+const METER_NAME_FALLBACK_MAP: Record<string, string> = {
+  '62415514': '1#电表',
+  '47862598': '2#电表',
+  '28022392': '3#电表',
+};
 
 const CURRENT_STACK_COLORS = ['#22d3ee', '#34d399', '#60a5fa'];
 const COMPARE_BAR_STYLE = {
@@ -220,6 +225,10 @@ function getXAxisInterval(unit: TimeUnit, count: number): number {
   return 0;
 }
 
+function getFallbackMeterName(deviceId: string): string {
+  return METER_NAME_FALLBACK_MAP[deviceId] || `电表-${deviceId.slice(-4)}`;
+}
+
 export const EnergyHistoryChart: React.FC = () => {
   const [timeUnit, setTimeUnit] = useState<TimeUnit>('day');
   const [selectedSourceId, setSelectedSourceId] = useState<string>('all');
@@ -247,9 +256,9 @@ export const EnergyHistoryChart: React.FC = () => {
         METER_DEVICE_IDS.map(async (deviceId) => {
           try {
             const res = await getDeviceInfo(deviceId);
-            return [deviceId, res?.result?.name || `设备 ${deviceId}`] as const;
+            return [deviceId, res?.result?.name || getFallbackMeterName(deviceId)] as const;
           } catch {
-            return [deviceId, `设备 ${deviceId}`] as const;
+            return [deviceId, getFallbackMeterName(deviceId)] as const;
           }
         }),
       );
@@ -270,7 +279,7 @@ export const EnergyHistoryChart: React.FC = () => {
     const series = METER_DEVICE_IDS.map((deviceId) => ({
       deviceId,
       key: `device_${deviceId}`,
-      deviceName: deviceNameMap[deviceId] || `设备 ${deviceId}`,
+      deviceName: deviceNameMap[deviceId] || getFallbackMeterName(deviceId),
     }));
 
     // 优先展示电表设备名称，避免都显示为同一属性名（如“用功总电能”）
@@ -298,7 +307,7 @@ export const EnergyHistoryChart: React.FC = () => {
     }
     return (
       meterSeries.find((series) => series.deviceId === selectedSourceId)?.displayName ||
-      `设备 ${selectedSourceId}`
+      getFallbackMeterName(selectedSourceId)
     );
   }, [meterSeries, selectedSourceId]);
 
